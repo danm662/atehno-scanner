@@ -1,0 +1,1296 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#BF0000">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ATEHNO">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>ATEHNO Сканер</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="lib/xlsx.full.min.js"></script>
+<style>
+:root{
+  --red:#BF0000;--red-d:#9a0000;--red-s:#fdeceb;--ink:#222;--ink2:#333;--mute:#777;--line:#e6e6e6;
+  --bg:#f2f2f2;--card:#fff;--chip:#f5f5f5;
+  --ok:#1a8a4a;--ok-s:#e7f6ee;--tr:#1e6fd9;--tr-s:#e8f1fd;--am:#b86e00;--am-s:#fff4e0;
+  --sh:0 1px 2px rgba(0,0,0,.06),0 4px 14px rgba(0,0,0,.06);
+  --safe-b:env(safe-area-inset-bottom,0px);--safe-t:env(safe-area-inset-top,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --red:#e01e1e;--red-d:#b80000;--red-s:#3a1414;--ink:#f0f0f0;--ink2:#ddd;--mute:#9a9a9a;--line:#2c2c2c;
+  --bg:#111;--card:#1b1b1b;--chip:#252525;--ok:#4cd38a;--ok-s:#15301f;--tr:#6aa8ff;--tr-s:#14243a;--am:#ffb547;--am-s:#33270f;--sh:none}}
+:root[data-theme="dark"]{
+  --red:#e01e1e;--red-d:#b80000;--red-s:#3a1414;--ink:#f0f0f0;--ink2:#ddd;--mute:#9a9a9a;--line:#2c2c2c;
+  --bg:#111;--card:#1b1b1b;--chip:#252525;--ok:#4cd38a;--ok-s:#15301f;--tr:#6aa8ff;--tr-s:#14243a;--am:#ffb547;--am-s:#33270f;--sh:none}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 Roboto,system-ui,-apple-system,sans-serif;overscroll-behavior-y:none}
+button{font:inherit;color:inherit;cursor:pointer}
+input,select{font:inherit;color:var(--ink)}
+.hidden{display:none!important}
+
+/* ---------- шапка ---------- */
+.top{position:sticky;top:0;z-index:30;background:var(--red);color:#fff;padding:calc(10px + var(--safe-t)) 16px 10px;display:flex;align-items:center;gap:10px;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+.logo{font-weight:900;font-size:22px;letter-spacing:.5px;line-height:1}
+.logo small{display:block;font-weight:500;font-size:10px;letter-spacing:2px;opacity:.8;margin-top:2px}
+.top .sp{flex:1}
+.storechip{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.16);border:0;color:#fff;border-radius:20px;padding:7px 12px;font-weight:500;font-size:13px}
+.storechip svg{width:16px;height:16px}
+.searchwrap{background:var(--red);padding:0 16px 12px;position:sticky;top:calc(52px + var(--safe-t));z-index:29}
+.search{display:flex;align-items:center;gap:8px;background:#fff;border-radius:12px;padding:0 6px 0 12px;height:46px}
+.search svg{width:20px;height:20px;color:#999;flex:none}
+.search input{flex:1;min-width:0;border:0;outline:0;background:none;font-size:16px;color:#222;height:100%}
+.search .x{border:0;background:none;color:#999;font-size:20px;padding:6px 8px}
+
+.cmpbox{margin-top:10px;border:1.5px solid var(--line);border-radius:12px;padding:4px 12px 6px}
+.cmph{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-weight:700;font-size:13px;padding:8px 0 6px}
+.cmph small{margin-left:auto;font-weight:400;color:var(--mute);font-size:11px}
+a.cmp{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line);text-decoration:none;color:var(--ink)}
+a.cmp b{display:block;font-size:13px;font-weight:500}a.cmp small{font-size:11px;color:var(--mute)}
+a.cmp .cp{font-weight:700;white-space:nowrap}
+#gate{position:fixed;inset:0;z-index:150;background:var(--bg);overflow-y:auto;animation:fade .25s}
+.gate-in{max-width:440px;margin:0 auto;padding:calc(40px + var(--safe-t)) 20px calc(30px + var(--safe-b))}
+.gate-p{color:var(--mute);font-size:14px;margin:0 0 18px}
+a.chip.site{text-decoration:none;color:var(--red);font-weight:500;background:var(--red-s)}
+.syncline{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--mute);padding:8px 16px 0;text-align:center}
+.syncline.bad{color:var(--am)}
+.syncline button{border:0;background:none;color:var(--red);font-weight:700;font-size:12px;padding:2px 4px}
+.spin{width:12px;height:12px;border:2px solid var(--line);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.conn{display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;background:var(--ok-s);color:var(--ok);margin-bottom:12px}
+.conn.off{background:var(--chip);color:var(--mute)}
+.conn.bad{background:var(--am-s);color:var(--am)}
+.conn b{display:block;font-size:15px}
+.conn span{font-size:12px;opacity:.9;word-break:break-all}
+.conn .big{width:44px;height:44px;border-radius:50%;background:currentColor;display:grid;place-items:center;flex:none}
+.conn .big svg{width:24px;height:24px;color:#fff}
+details.adm summary{cursor:pointer;list-style:none;padding:14px 4px;color:var(--mute);font-weight:500;font-size:13px}
+details.adm summary::-webkit-details-marker{display:none}
+main{padding:14px 16px calc(100px + var(--safe-b));max-width:720px;margin:0 auto}
+.view{animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ---------- нижняя панель ---------- */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--card);border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr 84px 1fr 1fr;padding:6px 6px calc(6px + var(--safe-b));box-shadow:0 -4px 20px rgba(0,0,0,.06)}
+.tabbar button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:500;color:var(--mute);padding:4px 0}
+.tabbar button svg{width:24px;height:24px}
+.tabbar button.on{color:var(--red)}
+.fab{position:relative;top:-22px;width:68px!important;height:68px;margin:0 auto;border-radius:50%!important;background:var(--red)!important;color:#fff!important;box-shadow:0 6px 18px rgba(191,0,0,.45);justify-content:center!important}
+.fab svg{width:32px!important;height:32px!important}
+.fab:active{transform:scale(.94)}
+.badge{position:absolute;top:2px;right:calc(50% - 22px);background:var(--red);color:#fff;font-size:10px;border-radius:10px;padding:1px 5px;font-weight:700}
+
+/* ---------- карточки ---------- */
+.card{background:var(--card);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:var(--sh)}
+.h2{font-size:13px;font-weight:700;color:var(--mute);text-transform:uppercase;letter-spacing:.06em;margin:18px 4px 8px}
+.empty{text-align:center;color:var(--mute);padding:36px 16px}
+.empty .ico{width:72px;height:72px;margin:0 auto 12px;border-radius:50%;background:var(--red-s);color:var(--red);display:grid;place-items:center}
+.empty .ico svg{width:36px;height:36px}
+.empty b{display:block;color:var(--ink);font-size:17px;margin-bottom:4px}
+.btn{border:0;border-radius:12px;padding:14px 16px;font-weight:700;font-size:15px;background:var(--red);color:#fff;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn:active{background:var(--red-d)}
+.btn.ghost{background:var(--chip);color:var(--ink)}
+.btn.line{background:none;border:1.5px solid var(--line);color:var(--ink)}
+.btn.w{width:100%}
+.btn svg{width:20px;height:20px}
+.row{display:flex;gap:8px;align-items:center}
+.grow{flex:1;min-width:0}
+
+/* список товаров */
+.li{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.li:last-child{border-bottom:0}
+.li:active{opacity:.6}
+.li .dot{width:10px;height:10px;border-radius:50%;flex:none}
+.li .t{font-weight:500;font-size:14px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.li .s{font-size:12px;color:var(--mute);margin-top:2px}
+.li .p{font-weight:700;white-space:nowrap;text-align:right}
+.li .p small{display:block;font-weight:400;font-size:11px;color:var(--mute)}
+
+/* карточка товара */
+.pc{animation:up .3s cubic-bezier(.2,.8,.2,1)}
+@keyframes up{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+.status{display:flex;align-items:center;gap:10px;border-radius:12px;padding:12px 14px;font-weight:700;margin-bottom:14px}
+.status svg{width:22px;height:22px;flex:none}
+.status small{display:block;font-weight:400;font-size:12px;opacity:.85}
+.st-ok{background:var(--ok-s);color:var(--ok)}.st-no{background:var(--red-s);color:var(--red)}.st-tr{background:var(--tr-s);color:var(--tr)}.st-am{background:var(--am-s);color:var(--am)}
+.pname{font-size:18px;font-weight:700;line-height:1.3;margin:0 0 8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.chip{background:var(--chip);border:0;border-radius:8px;padding:5px 9px;font-size:12px;color:var(--ink2)}
+.chip b{font-weight:500;color:var(--mute);margin-right:3px}
+.stores{display:grid;gap:8px;margin-bottom:14px}
+.store{background:var(--chip);border-radius:12px;padding:10px 6px;text-align:center;position:relative;border:2px solid transparent;transition:transform .15s}
+.store b{display:block;font-size:24px;font-weight:700;line-height:1.1}
+.store span{font-size:11px;color:var(--mute)}
+.store.z b{color:var(--mute);font-weight:400}
+.store.mine{border-color:var(--red);background:var(--card)}
+.store.mine::after{content:"мой";position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:6px;text-transform:uppercase}
+.store.tr{background:var(--tr-s)}.store.tr b{color:var(--tr)}
+.prices{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.price{border-radius:12px;padding:12px;border:1.5px solid var(--line)}
+.price span{font-size:12px;color:var(--mute);display:block;margin-bottom:2px}
+.price b{font-size:24px;font-weight:900;letter-spacing:-.5px;color:var(--ink)}
+.price i{font-style:normal;font-size:12px;color:var(--mute);display:block}
+.price s{color:var(--mute);font-size:14px;margin-left:4px}
+.price.main{border-color:var(--red);background:var(--red-s)}
+.price.main b{color:var(--red)}
+.akc{font-style:normal;font-size:9px;font-weight:700;background:var(--am);color:#fff;border-radius:5px;padding:1px 5px;margin-left:4px;vertical-align:1px}
+.promo{grid-column:1/-1;display:flex;align-items:center;gap:10px;background:var(--am-s);color:var(--am);border-radius:12px;padding:10px 12px;font-weight:700}
+.promo b{font-size:20px;margin-left:auto}
+.secret{margin-top:10px;border-radius:12px;background:var(--chip);overflow:hidden}
+.secret button{width:100%;border:0;background:none;display:flex;align-items:center;gap:8px;padding:12px 14px;font-weight:500;color:var(--mute)}
+.secret button svg{width:18px;height:18px}
+.secret .in{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:0 10px 12px}
+.secret .in div{background:var(--card);border-radius:10px;padding:8px;text-align:center}
+.secret .in b{display:block;font-size:17px}
+.secret .in span{font-size:11px;color:var(--mute)}
+.warn{color:var(--red)!important}
+.tip{display:flex;gap:10px;align-items:flex-start;margin-top:12px;padding:12px;border-radius:12px;background:var(--tr-s);color:var(--tr);font-size:13px}
+.tip svg{width:18px;height:18px;flex:none;margin-top:1px}
+
+/* ---------- сканер ---------- */
+#scanner{position:fixed;inset:0;z-index:100;background:#000;display:none}
+#scanner.on{display:block;animation:fade .2s}
+#scanner video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.sc-top{position:absolute;top:0;left:0;right:0;padding:calc(14px + var(--safe-t)) 16px 14px;display:flex;align-items:center;gap:10px;background:linear-gradient(rgba(0,0,0,.6),transparent);color:#fff}
+.sc-top .t{flex:1;font-weight:700;font-size:16px}
+.rbtn{width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.18);color:#fff;display:grid;place-items:center;backdrop-filter:blur(6px)}
+.rbtn svg{width:22px;height:22px}
+.rbtn.on{background:#fff;color:#000}
+.sc-frame{position:absolute;left:50%;top:42%;width:min(78vw,340px);height:min(44vw,190px);transform:translate(-50%,-50%);border-radius:18px;box-shadow:0 0 0 2000px rgba(0,0,0,.45)}
+.sc-frame i{position:absolute;width:34px;height:34px;border:4px solid #fff}
+.sc-frame i:nth-child(1){top:-2px;left:-2px;border-right:0;border-bottom:0;border-radius:16px 0 0 0}
+.sc-frame i:nth-child(2){top:-2px;right:-2px;border-left:0;border-bottom:0;border-radius:0 16px 0 0}
+.sc-frame i:nth-child(3){bottom:-2px;left:-2px;border-right:0;border-top:0;border-radius:0 0 0 16px}
+.sc-frame i:nth-child(4){bottom:-2px;right:-2px;border-left:0;border-top:0;border-radius:0 0 16px 0}
+.laser{position:absolute;left:8%;right:8%;height:2px;background:var(--red);box-shadow:0 0 12px 2px rgba(224,30,30,.8);animation:laser 1.8s ease-in-out infinite}
+@keyframes laser{0%,100%{top:12%}50%{top:88%}}
+.sc-frame.hit{animation:hit .35s}
+@keyframes hit{0%{box-shadow:0 0 0 2000px rgba(0,0,0,.45),0 0 0 0 rgba(76,211,138,.9)}100%{box-shadow:0 0 0 2000px rgba(0,0,0,.45),0 0 0 30px rgba(76,211,138,0)}}
+.sc-hint{position:absolute;left:0;right:0;top:calc(42% + min(22vw,95px) + 18px);text-align:center;color:#fff;font-size:14px;opacity:.9;padding:0 20px}
+.sc-bottom{position:absolute;left:0;right:0;bottom:0;padding:16px 16px calc(16px + var(--safe-b));background:linear-gradient(transparent,rgba(0,0,0,.75))}
+.sc-manual{display:flex;gap:8px}
+.sc-manual input{flex:1;min-width:0;height:48px;border-radius:12px;border:0;padding:0 14px;font-size:16px;background:rgba(255,255,255,.95);color:#222}
+.sc-last{background:#fff;color:#222;border-radius:14px;padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;animation:up .25s}
+.sc-last .n{font-size:28px;font-weight:900;color:var(--red);min-width:44px;text-align:center}
+.sc-last .t{font-weight:500;font-size:14px;line-height:1.25}
+.sc-last .s{font-size:12px;color:#777}
+
+/* ---------- ревизия ---------- */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;font-weight:500;color:var(--mute);margin:0 2px 6px}
+.seg{display:flex;background:var(--chip);border-radius:12px;padding:4px;gap:4px;overflow-x:auto;scrollbar-width:none}
+.seg::-webkit-scrollbar{display:none}
+.seg button{flex:1;border:0;background:none;border-radius:9px;padding:10px 8px;font-weight:500;font-size:13px;color:var(--mute);white-space:nowrap}
+.seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.seg button em{font-style:normal;font-size:11px;background:var(--line);border-radius:8px;padding:0 6px;margin-left:4px}
+.seg button.on em{background:var(--red);color:#fff}
+select.inp,input.inp{width:100%;height:48px;border:1.5px solid var(--line);border-radius:12px;background:var(--card);padding:0 12px;font-size:16px}
+.rev-head{background:linear-gradient(135deg,var(--red),#7a0000);color:#fff;border-radius:16px;padding:16px;margin-bottom:12px}
+.rev-head .t{font-size:13px;opacity:.85}
+.rev-head .n{font-size:22px;font-weight:900;margin:2px 0 10px}
+.rev-head .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.rev-head .stats div{background:rgba(255,255,255,.15);border-radius:10px;padding:8px;text-align:center}
+.rev-head .stats b{display:block;font-size:20px}
+.rev-head .stats span{font-size:11px;opacity:.85}
+.prog{height:6px;border-radius:3px;background:rgba(255,255,255,.25);margin-top:12px;overflow:hidden}
+.prog i{display:block;height:100%;background:#fff;border-radius:3px;transition:width .3s}
+.cnt{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+.cnt:last-child{border-bottom:0}
+.step{display:flex;align-items:center;gap:4px}
+.step button{width:36px;height:36px;border-radius:10px;border:0;background:var(--chip);font-size:20px;font-weight:500}
+.step input{width:48px;height:36px;text-align:center;border:1.5px solid var(--line);border-radius:10px;font-weight:700;font-size:16px;background:var(--card)}
+.diff{font-size:12px;font-weight:700;border-radius:8px;padding:2px 7px;white-space:nowrap}
+.d0{background:var(--ok-s);color:var(--ok)}.dm{background:var(--red-s);color:var(--red)}.dp{background:var(--tr-s);color:var(--tr)}
+.kpi{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.kpi div{border-radius:12px;padding:12px}
+.kpi b{display:block;font-size:24px;font-weight:900}
+.kpi span{font-size:12px}
+.pair{display:grid;grid-template-columns:1fr auto;gap:4px 10px;padding:12px 0;border-bottom:1px solid var(--line);font-size:13px}
+.pair:last-child{border-bottom:0}
+.pair .m,.pair .p{display:flex;gap:6px;align-items:flex-start}
+.pair .m::before{content:"−";color:var(--red);font-weight:900}
+.pair .p::before{content:"+";color:var(--tr);font-weight:900}
+.pair .q{grid-row:1/3;grid-column:2;align-self:center;font-weight:900;font-size:18px}
+
+/* ---------- база ---------- */
+.drop{border:2px dashed var(--line);border-radius:16px;padding:24px 16px;text-align:center}
+.drop .ico{width:56px;height:56px;border-radius:50%;background:var(--red-s);color:var(--red);display:grid;place-items:center;margin:0 auto 10px}
+.drop .ico svg{width:28px;height:28px}
+.log{font-size:13px;color:var(--mute);white-space:pre-line;margin-top:12px}
+.set{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+.set:last-child{border-bottom:0}
+.set .grow b{display:block;font-weight:500}
+.set .grow span{font-size:12px;color:var(--mute)}
+.sw{position:relative;width:50px;height:30px;flex:none}
+.sw input{opacity:0;width:0;height:0}
+.sw i{position:absolute;inset:0;background:var(--line);border-radius:15px;transition:.2s}
+.sw i::after{content:"";position:absolute;width:24px;height:24px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.sw input:checked+i{background:var(--red)}
+.sw input:checked+i::after{transform:translateX(20px)}
+
+/* ---------- лист выбора ---------- */
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:90;animation:fade .2s}
+.sheet{max-height:90vh;overflow-y:auto;overscroll-behavior:contain;position:fixed;left:0;right:0;bottom:0;z-index:91;background:var(--card);border-radius:20px 20px 0 0;padding:10px 16px calc(18px + var(--safe-b));animation:sheet .25s cubic-bezier(.2,.8,.2,1);max-width:720px;margin:0 auto}
+@keyframes sheet{from{transform:translateY(100%)}to{transform:none}}
+.sheet .grab{width:40px;height:4px;background:var(--line);border-radius:2px;margin:0 auto 14px}
+.sheet h3{margin:0 0 12px;font-size:18px}
+.opt{display:flex;align-items:center;gap:12px;width:100%;border:0;background:var(--chip);border-radius:12px;padding:14px;margin-bottom:8px;font-weight:500;text-align:left}
+.opt.on{background:var(--red-s);color:var(--red);font-weight:700}
+.opt svg{width:20px;height:20px}
+
+.toast{position:fixed;left:50%;bottom:calc(96px + var(--safe-b));transform:translate(-50%,20px);background:#222;color:#fff;padding:11px 18px;border-radius:24px;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:200;max-width:88%;text-align:center}
+.toast.on{opacity:.96;transform:translate(-50%,0)}
+#scanner ~ .toast{z-index:200}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-scan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v8M17 8v8"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
+  <symbol id="i-db" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-torch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M8 2h8v5l-2 3v12h-4V10L8 7z"/><path d="M12 14v2"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m7.5 12 3 3 6-6"/></symbol>
+  <symbol id="i-no" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 8l8 8M16 8l-8 8"/></symbol>
+  <symbol id="i-truck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M2 6h12v10H2zM14 9h4l4 4v3h-8z"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+  <symbol id="i-swap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="8" cy="8" r="1.6"/></symbol>
+  <symbol id="i-print" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4v-7h16v7h-2M7 14h10v7H7z"/></symbol>
+  <symbol id="i-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></symbol>
+</svg>
+
+<header class="top">
+  <div class="logo">ATEHNO<small>СКАНЕР</small></div>
+  <div class="sp"></div>
+  <button class="storechip" id="storeChip"><svg><use href="#i-pin"/></svg><span id="storeName">Магазин</span></button>
+</header>
+<div class="searchwrap" id="searchWrap">
+  <div class="search"><svg><use href="#i-search"/></svg>
+    <input id="q" type="search" placeholder="Название, артикул или штрихкод" autocomplete="off" enterkeyhint="search">
+    <button class="x hidden" id="qx" aria-label="Очистить">×</button></div>
+</div>
+
+<div class="syncline hidden" id="syncLine"></div>
+<main>
+  <section class="view" id="v-find"></section>
+  <section class="view hidden" id="v-rev"></section>
+  <section class="view hidden" id="v-base"></section>
+  <section class="view hidden" id="v-prices"></section>
+</main>
+
+<nav class="tabbar">
+  <button data-tab="find" class="on"><svg><use href="#i-search"/></svg>Поиск</button>
+  <button data-tab="rev" style="position:relative"><svg><use href="#i-check"/></svg>Ревизия<span class="badge hidden" id="revBadge"></span></button>
+  <button class="fab" id="fab" aria-label="Сканировать"><svg><use href="#i-scan"/></svg></button>
+  <button data-tab="prices" style="position:relative"><svg><use href="#i-tag"/></svg>Цены<span class="badge hidden" id="priceBadge"></span></button>
+  <button data-tab="base"><svg><use href="#i-db"/></svg>База</button>
+</nav>
+
+<div id="scanner">
+  <video id="video" playsinline muted autoplay></video>
+  <div class="sc-frame" id="frame"><i></i><i></i><i></i><i></i><div class="laser"></div></div>
+  <div class="sc-top"><button class="rbtn" id="scClose" aria-label="Закрыть"><svg><use href="#i-x"/></svg></button><div class="t" id="scTitle">Сканирование</div><button class="rbtn" id="scTorch" aria-label="Фонарик"><svg><use href="#i-torch"/></svg></button></div>
+  <div class="sc-hint" id="scHint">Наведите на штрихкод ценника или товара</div>
+  <div class="sc-bottom"><div id="scLast"></div>
+    <div class="sc-manual"><input id="scInput" inputmode="numeric" placeholder="Ввести код вручную" enterkeyhint="go"><button class="btn" id="scGo">OK</button></div></div>
+</div>
+<div id="gate" class="hidden"></div>
+<div class="toast" id="toast"></div>
+<input type="file" id="files" multiple class="hidden" accept=".xls,.xlsx,.csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv">
+
+<script>
+"use strict";
+/* ================= утилиты и хранилище ================= */
+const $ = s => document.querySelector(s);
+const esc = s => String(s==null?"":s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const num = v => { if (v==null||v==="") return 0; if (typeof v==="number") return v; const n=parseFloat(String(v).replace(/\s| /g,"").replace(",",".")); return isNaN(n)?0:n; };
+const fq = n => (Math.round(n*100)/100).toLocaleString("ru-RU");
+const usd = n => n ? "$" + (Math.round(n*100)/100).toLocaleString("ru-RU",{minimumFractionDigits:n<100&&n%1?2:0,maximumFractionDigits:2}) : "—";
+const mdl = n => n ? Math.round(n).toLocaleString("ru-RU") + " лей" : "—";
+const ic = (id, cls="") => `<svg class="${cls}"><use href="#i-${id}"/></svg>`;
+function toast(t){ const e=$("#toast"); e.textContent=t; e.classList.add("on"); clearTimeout(e._t); e._t=setTimeout(()=>e.classList.remove("on"),2200); }
+const S = {
+  get(k,d){ try{ const v=localStorage.getItem("atehno_"+k); return v==null?d:JSON.parse(v);}catch(e){return d;} },
+  set(k,v){ try{ localStorage.setItem("atehno_"+k, JSON.stringify(v)); }catch(e){} }
+};
+const IDB = {
+  open(){ return new Promise((res,rej)=>{ const r=indexedDB.open("atehno_scanner",1); r.onupgradeneeded=()=>r.result.createObjectStore("kv"); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); },
+  async get(k){ try{ const db=await this.open(); return await new Promise(res=>{ const q=db.transaction("kv").objectStore("kv").get(k); q.onsuccess=()=>res(q.result); q.onerror=()=>res(undefined); }); }catch(e){ return undefined; } },
+  async set(k,v){ try{ const db=await this.open(); await new Promise(res=>{ const t=db.transaction("kv","readwrite"); t.objectStore("kv").put(v,k); t.oncomplete=res; t.onerror=res; }); }catch(e){} }
+};
+const STORES = ["Бельцы","Кишинёв","ASEM","Meredian"];   // все известные склады 1С
+let ACTIVE = ["Бельцы","Кишинёв","ASEM"];                     // склады, по которым в базе есть остатки
+const PARSER_V = 3;                                            // версия разбора: изменилась — база разбирается заново
+const SHORT = {"Бельцы":"Бел","Кишинёв":"Киш","ASEM":"ASEM","Meredian":"Mer","Всего":"Всего"};
+let settings = Object.assign({rate:18.4, showCost:true, beep:true, store:""}, S.get("settings",{}));
+const saveSettings = ()=>S.set("settings", settings);
+let DB = {items:[], loaded:null, files:[]};
+let byCode = new Map();
+let REV = S.get("rev", null);
+let tab = "find";
+let current = null;          // открытая карточка
+
+/* ================= разбор выгрузок 1С ================= */
+function normCode(v){ if (v==null) return ""; let s = typeof v==="number" ? String(Math.round(v)) : String(v).trim(); if (/^\d+\.0+$/.test(s)) s=s.split(".")[0]; return s; }
+function storeOf(h){
+  const u = h.toUpperCase();
+  if (/ПРИХОД|ИМПОРТ|В ПУТИ|TRANZIT|TRANSIT/.test(u)) return "tr";
+  if (/ASEM/.test(u)) return "ASEM";
+  if (/MEREDIAN|MERIDIAN|МЕРИДИАН/.test(u)) return "Meredian";
+  if (/CHISINAU|КИШИН/.test(u)) return "Кишинёв";
+  if (/^ATEHNO\b|БЕЛЬЦ|BALTI|BĂLȚI/.test(u)) return "Бельцы";
+  return null;
+}
+function findHeader(rows){
+  for (let i=0;i<Math.min(rows.length,25);i++){
+    const c = (rows[i]||[]).map(x=>String(x==null?"":x).trim());
+    const hasCode=c.some(x=>/^код(ном)?\b|^кодном/i.test(x)), hasName=c.some(x=>/наимен|^тмц$|номенклатур/i.test(x)),
+          hasStore=c.some(x=>/^ATEHNO/i.test(x)), hasPrice=c.some(x=>/^1-4-2|^1-6/i.test(x));
+    if ((hasCode&&(hasName||hasStore||hasPrice)) || (hasStore&&hasName)) return i;
+  }
+  return -1;
+}
+const blank = code => ({code, art:"", bar:"", name:"", g1:"", g:"", st:{}, tr:0, cost:0, costMdl:0, online:0, promo:0, vitr:0, status:"", _q:0, _s:0});
+function parseSheet(rows, fname){
+  const hi = findHeader(rows);
+  if (hi<0) return parseByPosition(rows, fname);
+  const H = rows[hi].map(x=>String(x==null?"":x).trim());
+  const col = re => H.findIndex(h=>re.test(h));
+  const C = { code:col(/^код(ном)?$|^кодном|^код тмц|^код товара|^код$/i), bar:col(/штрих|barcode|^ean/i), art:col(/^арт/i),
+    name:col(/наимен|^тмц$|номенклатур/i), qty:col(/^кол/i), sum:col(/^сумма/i), cost:col(/себест/i), price:H.findIndex(h=>/^цена$/i.test(h)),
+    online:col(/^1-4-2/i), promo:col(/^1-4-1/i), vitr:col(/^1-6/i), status:col(/статус/i) };
+  if (C.code<0) C.code = H.findIndex(h=>/^код/i.test(h));
+  const groups = H.map((h,i)=>/групп/i.test(h)?i:-1).filter(i=>i>=0);
+  const SC = H.map((h,i)=>({i,s:storeOf(h)})).filter(x=>x.s);
+  const isPrice = C.online>=0 || C.vitr>=0 || C.promo>=0;
+  const out = new Map();
+  for (let r=hi+1;r<rows.length;r++){
+    const row=rows[r]; if (!row) continue;
+    const code=normCode(row[C.code]); if (!code || !/^\d/.test(code)) continue;
+    let it=out.get(code); if (!it){ it=blank(code); out.set(code,it); }
+    if (C.art>=0 && row[C.art]!=null && !it.art) it.art=String(row[C.art]).trim();
+    if (C.bar>=0 && row[C.bar]!=null) it.bar=normCode(row[C.bar]);
+    if (C.name>=0 && row[C.name]!=null && !it.name) it.name=String(row[C.name]).replace(/,?\s*мин\.\s*остаток\s*=\s*[\d.,]+/i,"").trim();
+    const gv=groups.map(i=>String(row[i]==null?"":row[i]).trim()).filter(Boolean);
+    if (gv.length && !it.g){
+      if (gv.length===1 && gv[0].includes("/")){
+        // путь группы 1С: «ACCENT TEHNO/KEYBOARDS & MOUSES/KEYBOARDS/2E» → категория KEYBOARDS, бренд 2E
+        const p=gv[0].split("/").map(s=>s.trim()).filter(Boolean);
+        it.g1=p[1]||p[0]; it.g=p.length>=3?p[p.length-2]:p[p.length-1];
+      } else { it.g1=gv[0]; it.g=gv[gv.length-1]; }
+    }
+    if (isPrice){
+      if (C.price>=0) it.costMdl=num(row[C.price])||it.costMdl;
+      // в прайсе есть общее количество — пока нет остатков по складам, показываем его
+      if (C.qty>=0 && !SC.length) it.st["Всего"]=(it.st["Всего"]||0)+num(row[C.qty]);
+      if (C.online>=0) it.online=Math.max(it.online,num(row[C.online]));
+      if (C.promo>=0) it.promo=Math.max(it.promo,num(row[C.promo]));
+      if (C.vitr>=0) it.vitr=Math.max(it.vitr,num(row[C.vitr]));
+    } else if (SC.length){
+      SC.forEach(({i,s})=>{ const q=num(row[i]); if (s==="tr") it.tr+=q; else it.st[s]=(it.st[s]||0)+q; });
+      if (C.cost>=0) it.cost=num(row[C.cost])||it.cost;
+    } else {
+      const q=C.qty>=0?num(row[C.qty]):0, st=C.status>=0?String(row[C.status]||""):"";
+      if (/пути|импорт|приход/i.test(st)) it.tr+=q; else it.st["Всего"]=(it.st["Всего"]||0)+q;
+      it._q+=q; it._s+=C.sum>=0?num(row[C.sum]):q*num(row[C.price]);
+      if (st && !it.status.includes(st)) it.status=(it.status?it.status+", ":"")+st;
+    }
+  }
+  out.forEach(it=>{ if (it._q>0&&it._s>0) it.cost=it._s/it._q; delete it._q; delete it._s; });
+  const kind = isPrice?"прайс":"остатки";
+  const log = `${fname}: ${kind}, ${out.size} товаров` +
+    (SC.length?` · склады: ${[...new Set(SC.map(x=>x.s==="tr"?"в пути":x.s))].join(", ")}`:"") +
+    (isPrice?` · цены: ${[C.online>=0?"онлайн":"",C.promo>=0?"промо":"",C.vitr>=0?"витрина":""].filter(Boolean).join(", ")}`:"");
+  return {kind, items:out, log:[log], stores:SC.length>0};
+}
+function parseByPosition(rows, fname){
+  const out=new Map(); let kind="остатки";
+  const h=(rows[0]||[]);
+  if (h.length>14 && rows.slice(1,30).some(r=>r && /^\d{5,}/.test(normCode(r[1])))) kind="прайс";
+  for (let r=1;r<rows.length;r++){
+    const row=rows[r]; if (!row) continue;
+    const code=normCode(kind==="прайс"?row[1]:row[5]); if (!/^\d/.test(code)) continue;
+    const it=out.get(code)||blank(code);
+    if (kind==="прайс"){ it.art=it.art||String(row[2]||""); it.costMdl=num(row[8]); it.vitr=Math.max(it.vitr,num(row[10])); it.online=Math.max(it.online,num(row[12])); it.promo=Math.max(it.promo,num(row[14])); }
+    else { it.g1=String(row[0]||"").trim(); it.g=String(row[3]||row[2]||"").trim(); it.art=String(row[6]||""); it.name=String(row[7]||""); const q=num(row[9]); it.st["Всего"]=(it.st["Всего"]||0)+q; it._q+=q; it._s+=num(row[10]); const st=String(row[15]||""); if (st&&!it.status.includes(st)) it.status=(it.status?it.status+", ":"")+st; }
+    out.set(code,it);
+  }
+  out.forEach(it=>{ if (it._q>0) it.cost=it._s/it._q; delete it._q; delete it._s; });
+  return {kind, items:out, log:[`${fname}: ${kind} (по позициям колонок), ${out.size} товаров`]};
+}
+function mergeParsed(parts){
+  const m=new Map();
+  for (const p of parts) for (const [code,it] of p.items){
+    const cur=m.get(code); if (!cur){ m.set(code,it); continue; }
+    for (const k of ["art","bar","name","g1","g","status"]) if (!cur[k]&&it[k]) cur[k]=it[k];
+    for (const k of ["costMdl","online","promo","vitr","cost"]) if (it[k]) cur[k]=it[k];
+    if (p.kind==="остатки"){ cur.st=Object.keys(it.st).length?it.st:cur.st; cur.tr=it.tr||cur.tr; }
+  }
+  // есть отчёт по складам — он главный: товара в нём нет, значит остатка нет (общее кол-во из прайса не берём)
+  if (parts.some(p=>p.stores)) for (const it of m.values()) if (!STORES.some(k=>k in it.st)) it.st={};
+  return [...m.values()];
+}
+async function loadFiles(fileList, opts={}){
+  const log=opts.quiet?null:$("#loadLog"); if (log) log.textContent="Читаю файлы…";
+  if (typeof XLSX==="undefined"){ if (log) log.textContent="Не загрузилась библиотека чтения Excel."; return false; }
+  const parts=[], lines=[];
+  for (const f of fileList){
+    try{
+      const wb=XLSX.read(await f.arrayBuffer(), {type:"array", codepage:1251, cellDates:true});
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, raw:true, defval:null});
+      const p=parseSheet(rows, f.name); parts.push(p); lines.push(...p.log);
+    }catch(e){ lines.push(`${f.name}: ошибка — ${e.message}`); }
+  }
+  if (!parts.length){ if (log) log.textContent=lines.join("\n"); return false; }
+  const kinds=new Set(parts.map(p=>p.kind)), keep=[];
+  if (!opts.fresh && DB.items.length && !(kinds.has("остатки")&&kinds.has("прайс"))){
+    const old=new Map(DB.items.map(it=>{ const c=Object.assign({},it,{st:Object.assign({},it.st)}); delete c._s; return [it.code,c]; }));
+    if (kinds.has("прайс")) old.forEach(it=>{ it.costMdl=0; it.online=0; it.promo=0; it.vitr=0; });
+    if (kinds.has("остатки")) old.forEach(it=>{ it.st={}; it.tr=0; });
+    keep.push({kind:"старое", items:old});
+  }
+  const items=mergeParsed([...keep,...parts]).filter(it=>it.name||Object.keys(it.st).length||it.online||it.vitr);
+  items.forEach(it=>delete it._s);
+  DB=Object.assign({items, loaded:opts.created||new Date().toISOString(), files:[...fileList].map(f=>f.name)}, opts.meta||{});
+  await IDB.set("db", DB);
+  indexDB();
+  lines.push(`\n✓ Готово: в базе ${items.length.toLocaleString("ru-RU")} товаров`);
+  if (!opts.quiet){ toast("База обновлена"); renderBase(lines.join("\n")); }
+  return true;
+}
+
+/* ================= доступ сотрудника и база с сервера ================= */
+// Офисный ПК (office/publish_db.py) выкладывает: atehno-db.json (связка ключей сотрудников),
+// s.bin (база для продавцов, без закупки) и a.bin (полная база для администраторов).
+// Телефон при регистрации создаёт пару ключей ECDH; закрытый ключ хранится только в телефоне.
+const DATA_URL = location.host==="danm662.github.io" ? new URL("data/", location.href).href : "https://danm662.github.io/atehno-scanner/data/";
+let ME = S.get("me", null);                 // {id, name, phone, pub, at, approved, role:"s"|"a", revoked}
+let SYNC = {busy:false, checked:0, error:"", state:""};   // state: waiting (нет выгрузки) · pending (ждёт одобрения) · revoked
+const enc = s => new TextEncoder().encode(s);
+const MAGIC2 = enc("ATH2");
+const b64u = {
+  enc(buf){ let s=""; new Uint8Array(buf).forEach(b=>s+=String.fromCharCode(b)); return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); },
+  dec(s){ s=s.replace(/-/g,"+").replace(/_/g,"/"); while (s.length%4) s+="="; const b=atob(s), a=new Uint8Array(b.length); for (let i=0;i<b.length;i++) a[i]=b.charCodeAt(i); return a; }
+};
+const isAdmin = ()=> !!(ME && ME.approved && ME.role==="a");
+const canSeeCost = ()=> isAdmin() && settings.showCost;
+// во встроенной копии APK (адрес appassets) сервер базы — чужой домен, поэтому запрос идёт через приложение
+const remote = u => (window.AndroidBridge && location.host==="appassets.androidplatform.net" && new URL(u, location.href).host!==location.host)
+  ? "https://appassets.androidplatform.net/__remote?u="+encodeURIComponent(u) : u;
+
+async function createIdentity(name, phone){
+  const kp = await crypto.subtle.generateKey({name:"ECDH", namedCurve:"P-256"}, false, ["deriveBits"]);
+  const pub = b64u.enc(await crypto.subtle.exportKey("raw", kp.publicKey));
+  const abc = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+  const id = Array.from(crypto.getRandomValues(new Uint8Array(10)), b=>abc[b%abc.length]).join("");
+  await IDB.set("keys", {priv: kp.privateKey});
+  ME = {id, name, phone, pub, at:new Date().toISOString(), approved:false, role:"s"};
+  S.set("me", ME);
+}
+const requestText = ()=> `Заявка на доступ к ATEHNO Сканер\n${ME.name}, ${ME.phone}\n\nATEHNO-REQ|${ME.id}|${ME.name}|${ME.phone}|${ME.pub}`;
+function shareRequest(){
+  const t = requestText();
+  if (window.AndroidBridge && AndroidBridge.shareText) { AndroidBridge.shareText(t); return; }
+  if (navigator.share) { navigator.share({text:t}).catch(e=>{ if (e.name!=="AbortError") copyRequest(); }); return; }
+  copyRequest();
+}
+function copyRequest(){
+  const t = requestText();
+  (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(()=>toast("Заявка скопирована — отправьте её администратору"))
+    .catch(()=>{ const a=document.createElement("textarea"); a.value=t; document.body.appendChild(a); a.select(); try{ document.execCommand("copy"); toast("Заявка скопирована"); }catch(e){} a.remove(); });
+}
+async function unwrapKey(ring, entry){
+  const keys = await IDB.get("keys");
+  if (!keys || !keys.priv) throw new Error("на телефоне нет ключа — зарегистрируйтесь заново");
+  const epk = await crypto.subtle.importKey("raw", b64u.dec(ring.epk), {name:"ECDH", namedCurve:"P-256"}, false, []);
+  const bits = await crypto.subtle.deriveBits({name:"ECDH", public:epk}, keys.priv, 256);
+  const hk = await crypto.subtle.importKey("raw", bits, "HKDF", false, ["deriveKey"]);
+  const kek = await crypto.subtle.deriveKey({name:"HKDF", hash:"SHA-256", salt:enc(ME.id), info:enc("ATEHNO-keywrap-v2")}, hk, {name:"AES-GCM", length:256}, false, ["decrypt"]);
+  let raw;
+  try{ raw = await crypto.subtle.decrypt({name:"AES-GCM", iv:b64u.dec(entry.iv), additionalData:enc(ME.id)}, kek, b64u.dec(entry.k)); }
+  catch(e){ throw new Error("ключ телефона не подходит — отправьте заявку заново"); }
+  return crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["decrypt"]);
+}
+async function decryptBundle(buf, key){
+  const u=new Uint8Array(buf);
+  if (u.length<32 || String.fromCharCode(...u.slice(0,4))!=="ATH2") throw new Error("неверный формат файла базы");
+  let pt;
+  try{ pt=await crypto.subtle.decrypt({name:"AES-GCM", iv:u.slice(4,16), additionalData:MAGIC2}, key, u.slice(16)); }
+  catch(e){ throw new Error("база повреждена или ключ устарел"); }
+  return JSON.parse(await new Response(new Blob([pt]).stream().pipeThrough(new DecompressionStream("gzip"))).text());
+}
+async function wipeData(){
+  DB={items:[], loaded:null, files:[]}; await IDB.set("db", DB);
+  REV=null; S.set("rev", null); S.set("recent", []); current=null; indexDB(); updateBadge();
+}
+function saveMe(){ S.set("me", ME); }
+async function syncDB(force){
+  if (!ME || SYNC.busy) return;
+  if (!navigator.onLine && !force){ SYNC.error="нет интернета"; syncUI(); return; }
+  SYNC.busy=true; SYNC.error=""; syncUI();
+  try{
+    const vr=await fetch(remote(DATA_URL+"atehno-db.json?t="+Date.now()), {cache:"no-store"});
+    if (!vr.ok && vr.status!==404) throw new Error(vr.status>=500?"сервер временно недоступен":"сервер ответил "+vr.status);
+    const ring = vr.ok ? await vr.json() : {};
+    if (ring.v!==2){
+      SYNC.state = ME.approved ? "waiting" : "pending";                 // офис ещё не публиковал базу нового формата
+    } else {
+      const entry = ring.keys && ring.keys[ME.id];
+      if (!entry){
+        if (ME.approved){                                               // был доступ, а теперь нет — сотрудника удалили
+          ME.approved=false; ME.revoked=true; saveMe(); await wipeData();
+          try{ if (window.AndroidBridge && AndroidBridge.setDevice) AndroidBridge.setDevice("", ""); }catch(e){}
+          toast("Доступ отключён администратором");
+        }
+        SYNC.state = ME.revoked ? "revoked" : "pending";
+      } else {
+        const roleChanged = ME.role!==entry.r;
+        if (!ME.approved || roleChanged){ ME.approved=true; ME.revoked=false; ME.role=entry.r; saveMe(); }
+        SYNC.state = "";
+        // Android: фоновая проверка изменений цен и уведомления
+        try{ if (window.AndroidBridge && AndroidBridge.setDevice) AndroidBridge.setDevice(ME.id, DATA_URL); }catch(e){}
+        if (force || roleChanged || ring.hash!==DB.srcHash || !DB.items.length || DB.parserV!==PARSER_V){
+          const key = await unwrapKey(ring, entry);
+          const br=await fetch(remote(DATA_URL+(entry.r==="a"?"a.bin":"s.bin")+"?h="+ring.hash), {cache:"no-store"});
+          if (!br.ok) throw new Error("файл базы: "+br.status);
+          const bundle=await decryptBundle(await br.arrayBuffer(), key);
+          const files=bundle.files.map(f=>{ const bin=atob(f.data), a=new Uint8Array(bin.length); for (let i=0;i<bin.length;i++) a[i]=bin.charCodeAt(i); return new File([a], f.name); });
+          const ok=await loadFiles(files, {fresh:true, quiet:true, created:bundle.created, meta:{srcHash:ring.hash, srcFiles:ring.files, parserV:PARSER_V, role:entry.r, changes:bundle.changes||[], cfg:bundle.cfg||{}, site:bundle.site||null}});
+          if (!ok) throw new Error("не удалось прочитать файлы 1С");
+          priceBadge();
+          const lb=lastBatch(); if (lb && lb.id>S.get("pcSeen","")) setTimeout(()=>toast(`Изменились цены у ${lb.items.length} товаров — вкладка «Цены»`), 2600);
+          if (current) current=byCode.get(current.code)||null;
+          toast(`База обновлена · ${DB.items.length.toLocaleString("ru-RU")} товаров`);
+        }
+      }
+    }
+    SYNC.checked=Date.now();
+  }catch(e){ SYNC.error = /Failed to fetch|NetworkError|Load failed/i.test(e.message) ? "нет связи с сервером" : (e.message||String(e)); }
+  SYNC.busy=false; syncUI(); renderGate();
+  if (tab==="base") renderBase();
+  else if (tab==="find" && !$("#q").value) renderFind("");
+}
+function ago(iso){
+  const m=Math.round((Date.now()-new Date(iso))/60000);
+  if (m<1) return "только что"; if (m<60) return m+" мин назад";
+  const h=Math.round(m/60); if (h<24) return h+" ч назад";
+  return new Date(iso).toLocaleDateString("ru-RU",{day:"numeric",month:"long"});
+}
+function syncUI(){
+  const el=$("#syncLine"); if (!el) return;
+  if (!ME || !ME.approved || (!DB.items.length && !SYNC.busy && !SYNC.error && SYNC.state!=="waiting")){ el.classList.add("hidden"); return; }
+  const old = DB.loaded && (Date.now()-new Date(DB.loaded))>36e5*24;
+  el.classList.remove("hidden");
+  el.className = "syncline" + (SYNC.error||old ? " bad" : "");
+  el.innerHTML = SYNC.busy ? `<span class="spin"></span>Обновляю базу…`
+    : SYNC.state==="waiting" && !DB.items.length ? `Доступ есть · ждём первую выгрузку из офиса <button id="syncRetry">Проверить</button>`
+    : SYNC.error ? `⚠ Не удалось обновить: ${esc(SYNC.error)} · база от ${DB.loaded?ago(DB.loaded):"—"} <button id="syncRetry">Повторить</button>`
+    : `База от ${ago(DB.loaded)}${old?" — устарела, проверьте публикацию в офисе":""} <button id="syncRetry">Обновить</button>`;
+  const b=$("#syncRetry"); if (b) b.onclick=()=>syncDB(true);
+}
+
+/* ---------- экран входа: регистрация, ожидание одобрения, доступ отключён ---------- */
+function renderGate(){
+  const g=$("#gate");
+  if (ME && ME.approved){ g.classList.add("hidden"); document.body.style.overflow=""; return; }
+  g.classList.remove("hidden"); document.body.style.overflow="hidden";
+  if (!ME){
+    g.innerHTML=`<div class="gate-in"><div class="logo" style="color:var(--red);font-size:30px">ATEHNO<small style="color:var(--mute)">СКАНЕР</small></div>
+      <h2 class="pname" style="margin:22px 0 6px">Вход для сотрудника</h2>
+      <p class="gate-p">Укажите свои данные. Администратор получит заявку и откроет доступ к остаткам и ценам.</p>
+      <div class="field"><label>Имя</label><input class="inp" id="gFirst" autocomplete="given-name" enterkeyhint="next"></div>
+      <div class="field"><label>Фамилия</label><input class="inp" id="gLast" autocomplete="family-name" enterkeyhint="next"></div>
+      <div class="field"><label>Телефон</label><input class="inp" id="gPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+373 6X XXX XXX" enterkeyhint="done"></div>
+      <button class="btn w" id="gGo">Продолжить</button>
+      <p class="gate-p" style="margin-top:14px;font-size:12px">Данные видит только администратор ATEHNO. Если вы уволитесь, доступ будет отключён, а база на телефоне сотрётся.</p></div>`;
+    const ph=$("#gPhone"); ph.addEventListener("focus", ()=>{ if (!ph.value) ph.value="+373 "; });
+    $("#gGo").onclick=async()=>{
+      const f=$("#gFirst").value.trim().replace(/\|/g,""), l=$("#gLast").value.trim().replace(/\|/g,""), p=$("#gPhone").value.replace(/[^\d+]/g,"");
+      if (f.length<2 || l.length<2){ toast("Укажите имя и фамилию"); return; }
+      if (p.replace(/\D/g,"").length<8){ toast("Укажите номер телефона полностью"); return; }
+      $("#gGo").disabled=true;
+      try{ await createIdentity(`${f} ${l}`, p); renderGate(); syncDB(true); }
+      catch(e){ toast("Ошибка: "+e.message); $("#gGo").disabled=false; }
+    };
+    return;
+  }
+  const revoked = ME.revoked;
+  g.innerHTML=`<div class="gate-in"><div class="logo" style="color:var(--red);font-size:30px">ATEHNO<small style="color:var(--mute)">СКАНЕР</small></div>
+    <div class="status ${revoked?"st-no":"st-am"}" style="margin-top:22px">${ic(revoked?"no":"clock")}<div>${revoked?"Доступ отключён администратором":"Ожидает подтверждения"}<small>${revoked?"База с телефона удалена. Если это ошибка — отправьте заявку заново.":"Отправьте заявку администратору. Как только он её одобрит, база загрузится сама."}</small></div></div>
+    <div class="card" style="box-shadow:none;border:1.5px solid var(--line)"><div style="font-size:12px;color:var(--mute)">Сотрудник</div><div style="font-weight:700;font-size:17px">${esc(ME.name)}</div><div style="color:var(--mute)">${esc(ME.phone)} · код ${esc(ME.id)}</div></div>
+    <button class="btn w" id="gShare">Отправить заявку администратору</button>
+    <div class="row" style="margin-top:8px"><button class="btn ghost grow" id="gCopy">Скопировать</button><button class="btn ghost grow" id="gCheck">${SYNC.busy?"Проверяю…":"Проверить"}</button></div>
+    ${SYNC.error?`<p class="gate-p" style="color:var(--am)">⚠ ${esc(SYNC.error)}</p>`:""}
+    <button class="btn line w" id="gReset" style="margin-top:18px">Изменить имя или телефон</button></div>`;
+  $("#gShare").onclick=shareRequest;
+  $("#gCopy").onclick=copyRequest;
+  $("#gCheck").onclick=()=>syncDB(true);
+  $("#gReset").onclick=async()=>{ if (!confirm("Создать новую заявку? Старую администратор должен будет удалить.")) return; ME=null; S.set("me",null); await IDB.set("keys",null); renderGate(); };
+}
+function indexDB(){
+  byCode=new Map();
+  for (const it of DB.items){
+    it._s=(it.code+" "+it.art+" "+it.bar+" "+it.name+" "+it.g).toLowerCase();
+    byCode.set(it.code,it); if (it.bar) byCode.set(it.bar,it);
+  }
+  for (const it of DB.items){ const a=it.art&&it.art.replace(/\s/g,"").toLowerCase(); if (a&&!byCode.has(a)) byCode.set(a,it); }
+  if (DB.items.length){
+    // показываем только склады, по которым в выгрузке есть хоть один остаток (Meredian пустой — плитки нет)
+    ACTIVE = STORES.filter(k=>DB.items.some(it=>(it.st[k]||0)>0));
+    if (hasStores() && !ACTIVE.includes(settings.store)) settings.store = ACTIVE[0];
+  } else { ACTIVE = ["Бельцы","Кишинёв","ASEM"]; if (!settings.store) settings.store = "Бельцы"; }
+  $("#storeName").textContent = myStore();
+}
+const myStore = ()=> hasStores() ? (settings.store||"Бельцы") : "Всего";
+const hasStores = ()=>!DB.items.length || ACTIVE.length>0;
+
+/* ================= поиск ================= */
+function lookup(code){
+  code=String(code).trim(); if (!code) return null;
+  return byCode.get(code)||byCode.get(code.replace(/^0+/,""))||byCode.get(code.replace(/\s/g,"").toLowerCase())||(code.length===12?byCode.get("0"+code):null)||null;
+}
+const total = it => STORES.reduce((s,k)=>s+(it.st[k]||0),0)+(it.st["Всего"]||0);
+function search(q, limit=50){
+  q=q.toLowerCase().trim(); if (!q) return [];
+  const toks=q.split(/\s+/), res=[];
+  for (const it of DB.items){ if (toks.every(t=>it._s.includes(t))){ res.push(it); if (res.length>=limit*6) break; } }
+  const my = myStore();
+  res.sort((a,b)=>((b.st[my]||0)>0)-((a.st[my]||0)>0) || (total(b)>0)-(total(a)>0) || a.name.localeCompare(b.name));
+  return res.slice(0,limit);
+}
+const costUsd = it => it.cost || (it.costMdl ? it.costMdl/settings.rate : 0);
+const markup = (p,c) => p&&c ? Math.round((p-c)/c*100) : null;
+const storeKeys = it => ACTIVE.length ? ACTIVE : ["Всего"];
+function addRecent(code){ const r=S.get("recent",[]).filter(c=>c!==code); r.unshift(code); S.set("recent", r.slice(0,30)); }
+
+function statusBlock(it){
+  const my=myStore(), here=it.st[my]||0, all=total(it);
+  const others=storeKeys(it).filter(k=>k!==my && (it.st[k]||0)>0);
+  if (my==="Всего" || !STORES.includes(my)){
+    if (all>0) return `<div class="status st-ok">${ic("ok")}<div>В наличии ${fq(all)} шт</div></div>`;
+  } else if (here>0) return `<div class="status st-ok">${ic("ok")}<div>Есть в магазине ${esc(my)}: ${fq(here)} шт${others.length?`<small>ещё в ${others.map(k=>`${k} ${fq(it.st[k])}`).join(", ")}</small>`:""}</div></div>`;
+  else if (others.length) return `<div class="status st-am">${ic("swap")}<div>Здесь нет — есть в ${others.map(k=>`${k} (${fq(it.st[k])})`).join(", ")}<small>Можно заказать перемещение в ${esc(my)}</small></div></div>`;
+  if (it.tr>0) return `<div class="status st-tr">${ic("truck")}<div>Нет в наличии — в пути ${fq(it.tr)} шт<small>Можно принять предзаказ</small></div></div>`;
+  return `<div class="status st-no">${ic("no")}<div>Нет в наличии<small>Ни в одном магазине, в пути тоже нет</small></div></div>`;
+}
+function productCard(it){
+  current=it;
+  const ks=storeKeys(it), my=myStore();
+  const tiles = ks.map(k=>{ const q=it.st[k]||0; return `<div class="store ${q?"":"z"} ${k===my?"mine":""}"><b>${fq(q)}</b><span>${k}</span></div>`; }).join("")
+    + `<div class="store tr ${it.tr?"":"z"}"><b>${fq(it.tr)}</b><span>в пути</span></div>`;
+  const onl=it.online, pr=it.promo>0&&(!onl||it.promo<onl)?it.promo:0, vit=it.vitr, c=costUsd(it), sell=pr||onl;
+  const below = c && sell && sell<c;
+  const prices = `<div class="prices">
+      <div class="price main"><span>Цена онлайн${pr?' <em class="akc">АКЦИЯ</em>':""}</span><b>${mdl(sell*settings.rate)}</b>${pr?`<s>${mdl(onl*settings.rate)}</s>`:""}<i>${sell?usd(sell)+" × "+String(settings.rate).replace(".",","):"нет в прайсе"}</i></div>
+      <div class="price"><span>Цена витрины</span><b>${mdl(vit)}</b><i>${vit?"≈ "+usd(vit/settings.rate):"нет в прайсе"}</i></div>
+    </div>`;
+  const secret = canSeeCost() && c ?`<div class="secret" id="secret"><button id="secBtn">${ic("eye")}<span class="grow" style="text-align:left">Закупка и наценка</span>${below?'<span class="warn">ниже закупки!</span>':'<span style="font-size:12px">показать</span>'}</button>
+      <div class="in hidden" id="secIn"><div><b>${usd(c)}</b><span>закупка</span></div><div><b class="${below?"warn":""}">${markup(sell,c)!=null?markup(sell,c)+"%":"—"}</b><span>наценка онлайн</span></div><div><b>${vit&&c?markup(vit/settings.rate,c)+"%":"—"}</b><span>наценка витрина</span></div></div></div>` : "";
+  return `<div class="card pc">${statusBlock(it)}
+    <h2 class="pname">${esc(it.name||"(без названия)")}</h2>
+    <div class="chips"><button class="chip" data-copy="${esc(it.code)}"><b>Код</b>${esc(it.code)}</button>${it.art?`<button class="chip" data-copy="${esc(it.art)}"><b>Арт.</b>${esc(it.art)}</button>`:""}${it.g?`<span class="chip">${esc(it.g)}</span>`:""}<a class="chip site" href="${esc((DB.site&&DB.site.urls&&DB.site.urls[it.code])||("https://atehno.md/search?keywords="+encodeURIComponent(it.code)))}" target="_blank" rel="noopener">↗ На сайте atehno.md</a></div>
+    <div class="stores" style="grid-template-columns:repeat(${ks.length+1},1fr)">${tiles}</div>
+    ${prices}${compBlock(it, sell)}${secret}
+    <div class="row" style="margin-top:10px"><button class="btn ghost grow" id="pcCredit">${ic("card")}Кредит / рассрочка</button><button class="btn ghost" id="pcTag">${ic("print")}Ценник</button></div></div>`;
+}
+// цены конкурентов из тестовой базы сайта (их собирает бот цен); сравнение с нашей онлайн-ценой в леях
+function compBlock(it, sell){
+  const list = DB.site && DB.site.comp && DB.site.comp[it.code];
+  if (!list || !list.length) return "";
+  const ours = Math.round((sell||0)*settings.rate) || it.vitr || 0;
+  const rows = list.slice(0,6).map(([name, price, url, when])=>{
+    const d = ours ? Math.round(price-ours) : 0;
+    const tag = !ours ? "" : d<0 ? `<span class="diff dm">дешевле на ${Math.abs(d).toLocaleString("ru-RU")}</span>` : d>0 ? `<span class="diff d0">дороже на ${d.toLocaleString("ru-RU")}</span>` : `<span class="diff dp">как у нас</span>`;
+    return `<a class="cmp" href="${esc(url)}" target="_blank" rel="noopener"><span class="grow"><b>${esc(name)}</b><small>${when?new Date(when).toLocaleDateString("ru-RU",{day:"numeric",month:"short"}):""}</small></span><span class="cp">${Math.round(price).toLocaleString("ru-RU")} лей</span>${tag}</a>`;
+  }).join("");
+  const cheaper = ours ? list.filter(x=>x[1]<ours-0.5).length : 0;
+  return `<div class="cmpbox"><div class="cmph">Цены конкурентов${cheaper?` <span class="diff dm">${cheaper} дешевле</span>`:` <span class="diff d0">мы не дороже</span>`}<small>наша онлайн ${ours?ours.toLocaleString("ru-RU")+" лей":"—"}</small></div>${rows}</div>`;
+}
+function bindCard(root){
+  root.querySelectorAll("[data-copy]").forEach(b=>b.onclick=()=>{ try{ navigator.clipboard.writeText(b.dataset.copy); toast("Скопировано: "+b.dataset.copy); }catch(e){} });
+  const it=current, cb=root.querySelector("#pcCredit"), tb=root.querySelector("#pcTag");
+  if (cb) cb.onclick=()=>creditSheet(it);
+  if (tb) tb.onclick=()=>{ const sell=it.promo>0&&(!it.online||it.promo<it.online)?it.promo:it.online; const price=it.vitr||Math.round(sell*settings.rate); if (!price){ toast("У товара нет цены в прайсе"); return; } printTags([{code:it.code, name:it.name, art:it.art, price, old:0}]); };
+  const sb=root.querySelector("#secBtn");
+  if (sb) sb.onclick=()=>{ const i=root.querySelector("#secIn"); i.classList.toggle("hidden"); clearTimeout(sb._t); if (!i.classList.contains("hidden")) sb._t=setTimeout(()=>i.classList.add("hidden"), 8000); };
+}
+function li(it){
+  const my=myStore(), here=it.st[my]||0, all=total(it);
+  const color = here>0||(my==="Всего"&&all>0) ? "var(--ok)" : all>0 ? "var(--am)" : it.tr>0 ? "var(--tr)" : "var(--red)";
+  const s = storeKeys(it).map(k=>`${SHORT[k]} ${fq(it.st[k]||0)}`).join(" · ") + (it.tr?` · в пути ${fq(it.tr)}`:"");
+  const pr = it.promo>0&&(!it.online||it.promo<it.online)?it.promo:it.online;
+  return `<div class="li" data-code="${esc(it.code)}"><span class="dot" style="background:${color}"></span><div class="grow"><div class="t">${esc(it.name)}</div><div class="s">${s}</div></div><div class="p">${pr?mdl(pr*settings.rate):mdl(it.vitr)}<small>${it.vitr&&pr?"витрина "+mdl(it.vitr):""}</small></div></div>`;
+}
+function bindList(root, onPick){ root.querySelectorAll(".li").forEach(e=>e.onclick=()=>onPick(byCode.get(e.dataset.code))); }
+
+function emptyState(icon, title, text, btn){ return `<div class="empty"><div class="ico">${ic(icon)}</div><b>${title}</b>${text}${btn?`<div style="margin-top:16px">${btn}</div>`:""}</div>`; }
+function renderFind(q, fromScan){
+  const v=$("#v-find");
+  if (!DB.items.length){
+    v.innerHTML = SYNC.state==="waiting"
+          ? emptyState("clock","Доступ открыт","Офис ещё не выложил выгрузку 1С. Как только она появится, остатки и цены загрузятся сами — ничего нажимать не нужно.", `<button class="btn ghost" onclick="syncDB(true)">Проверить сейчас</button>`)
+          : emptyState("db", SYNC.error?"База не загрузилась":"Загружаю базу…", SYNC.error?esc(SYNC.error):"Скачиваю остатки и цены с сервера", `<button class="btn" onclick="syncDB(true)">Повторить</button>`);
+    return;
+  }
+  q=String(q==null?$("#q").value:q).trim();
+  if (!q){
+    if (current){ v.innerHTML=productCard(current); bindCard(v); return; }
+    v.innerHTML=emptyState("scan","Сканируйте ценник","Нажмите красную кнопку внизу и наведите камеру на штрихкод. Или начните вводить название товара.",`<button class="btn" onclick="openScanner()">${ic("scan")}Сканировать</button>`)+
+      `<p style="text-align:center;color:var(--mute);font-size:12px">В базе ${DB.items.length.toLocaleString("ru-RU")} товаров · обновлена ${new Date(DB.loaded).toLocaleDateString("ru-RU")}</p>`;
+    const r=S.get("recent",[]).map(c=>byCode.get(c)).filter(Boolean).slice(0,10);
+    if (r.length){ v.insertAdjacentHTML("beforeend", `<div class="h2">Недавно смотрели</div><div class="card" style="padding:4px 16px">${r.map(li).join("")}</div>`); bindList(v, it=>showProduct(it)); }
+    return;
+  }
+  const exact=lookup(q);
+  if (exact){ showProduct(exact, fromScan); return; }
+  const res=search(q);
+  if (!res.length){
+    if (fromScan) feedback(false);
+    v.innerHTML=emptyState("search", fromScan?"Штрихкод не найден":"Ничего не найдено", fromScan?`Кода <b style="display:inline;font-size:inherit">${esc(q)}</b> нет в выгрузке. Попробуйте ввести название с ценника.`:"Попробуйте короче: часть названия или артикула"); return;
+  }
+  if (res.length===1){ showProduct(res[0]); return; }
+  current=null;
+  v.innerHTML=`<div class="h2">Найдено ${res.length>=50?"50+":res.length}</div><div class="card" style="padding:4px 16px">${res.map(li).join("")}</div>`;
+  bindList(v, it=>{ showProduct(it); });
+}
+function showProduct(it, fromScan){
+  if (fromScan) feedback(true);
+  addRecent(it.code);
+  if (tab!=="find") showTab("find", true);
+  const v=$("#v-find"); v.innerHTML=productCard(it); bindCard(v); window.scrollTo({top:0, behavior:"smooth"});
+}
+let tq;
+$("#q").addEventListener("input", e=>{ $("#qx").classList.toggle("hidden", !e.target.value); clearTimeout(tq); tq=setTimeout(()=>{ if (tab!=="find") showTab("find",true); current=null; renderFind(e.target.value); },180); });
+$("#q").addEventListener("keydown", e=>{ if (e.key==="Enter"){ const v=e.target.value.trim(); renderFind(v, /^\d{6,}$/.test(v)); e.target.blur(); } });
+$("#qx").onclick=()=>{ $("#q").value=""; $("#qx").classList.add("hidden"); current=null; renderFind(""); };
+
+/* ================= недавние ================= */
+function renderRecent(){
+  const v=$("#v-find"), r=S.get("recent",[]).map(c=>byCode.get(c)).filter(Boolean);
+  current=null;
+  v.innerHTML = r.length ? `<div class="h2">Недавно смотрели</div><div class="card" style="padding:4px 16px">${r.map(li).join("")}</div>` : emptyState("clock","Пока пусто","Здесь появятся товары, которые вы сканировали или открывали");
+  bindList(v, it=>showProduct(it));
+}
+
+/* ================= изменения цен и ценники ================= */
+// Историю изменений (за 30 дней) считает офисный ПК при публикации и кладёт в зашифрованную базу.
+let PF = {days:7, mine:true, off:new Set()};
+function changeRows(days){
+  const since = Date.now()-days*864e5, m = new Map();
+  for (const b of (DB.changes||[])){
+    if (new Date(b.at).getTime() < since) continue;
+    for (const [code,name,ov,nv,oo,no,op,np] of b.items){
+      const cur = m.get(code);
+      if (cur) Object.assign(cur, {nv, no, np, at:b.at});
+      else m.set(code, {code, name, ov, nv, oo, no, op, np, at:b.at});
+    }
+  }
+  return [...m.values()].filter(r=>Math.abs(r.ov-r.nv)>0.004 || Math.abs(r.oo-r.no)>0.004 || Math.abs(r.op-r.np)>0.004);
+}
+const lastBatch = ()=> (DB.changes||[]).slice(-1)[0];
+function priceBadge(){
+  const b=$("#priceBadge"), last=lastBatch(), seen=S.get("pcSeen","");
+  const n = last && last.id>seen ? last.items.length : 0;
+  b.textContent = n>99 ? "99+" : n; b.classList.toggle("hidden", !n);
+}
+function markPricesSeen(){
+  const last=lastBatch(); if (!last) return;
+  S.set("pcSeen", last.id); priceBadge();
+  try{ window.AndroidBridge && AndroidBridge.markSeen && AndroidBridge.markSeen(last.id); }catch(e){}
+}
+const lei = n => n ? Math.round(n).toLocaleString("ru-RU")+" лей" : "—";
+function arrow(o, n){ if (Math.abs(o-n)<0.005) return ""; return n>o ? `<span style="color:var(--red);font-weight:700">↑</span>` : `<span style="color:var(--ok);font-weight:700">↓</span>`; }
+function renderPrices(){
+  const v=$("#v-prices");
+  if (!DB.items.length){ v.innerHTML=emptyState("tag","Нет базы","Изменения цен появятся после загрузки базы"); return; }
+  let rows = changeRows(PF.days);
+  const total = rows.length, my = myStore();
+  if (PF.mine && hasStores()) rows = rows.filter(r=>{ const it=byCode.get(r.code); return it && (it.st[my]||0)>0; });
+  rows.sort((a,b)=> (b.at>a.at)-(b.at<a.at) || (Math.abs(b.nv-b.ov)>0)-(Math.abs(a.nv-a.ov)>0) || a.name.localeCompare(b.name));
+  const sel = rows.filter(r=>!PF.off.has(r.code));
+  const last = lastBatch();
+  v.innerHTML = `<div class="card">
+      <h2 class="pname" style="margin-bottom:2px">Изменения цен</h2>
+      <div style="font-size:12px;color:var(--mute);margin-bottom:12px">${last?`последнее изменение ${new Date(last.at).toLocaleString("ru-RU",{day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"})}`:"пока изменений не было — они появятся после следующей выгрузки 1С с новыми ценами"}</div>
+      <div class="seg" id="pDays" style="margin-bottom:10px">${[[1,"Сегодня"],[7,"7 дней"],[30,"30 дней"]].map(([d,t])=>`<button data-d="${d}" class="${PF.days===d?"on":""}">${t}</button>`).join("")}</div>
+      ${hasStores()?`<label class="set" style="padding:6px 0;border:0"><div class="grow"><b>Только в наличии в ${esc(my)}</b><span>${rows.length} из ${total} изменённых</span></div><span class="sw"><input type="checkbox" id="pMine" ${PF.mine?"checked":""}><i></i></span></label>`:""}
+      <div class="row" style="margin-top:8px"><button class="btn grow" id="pPrint" ${sel.length?"":"disabled"}>${ic("print")}Ценники (${sel.length})</button><button class="btn ghost" id="pAll">${sel.length===rows.length?"Снять все":"Выбрать все"}</button></div>
+    </div>
+    ${rows.length?`<div class="card" style="padding:4px 16px">${rows.map(r=>`
+      <div class="cnt" data-code="${esc(r.code)}">
+        <input type="checkbox" class="pchk" ${PF.off.has(r.code)?"":"checked"} style="width:22px;height:22px;flex:none;accent-color:var(--red)">
+        <div class="grow pname-link" style="cursor:pointer"><div style="font-weight:500;font-size:14px;line-height:1.3">${esc(r.name||(byCode.get(r.code)||{}).name||r.code)}</div>
+          <div style="font-size:12px;color:var(--mute)">${esc(r.code)} · ${new Date(r.at).toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}${Math.abs(r.oo-r.no)>0.004?` · онлайн ${lei(r.oo*settings.rate)} → ${lei(r.no*settings.rate)}`:""}${Math.abs(r.op-r.np)>0.004?` · акция ${r.np?lei(r.np*settings.rate):"снята"}`:""}</div></div>
+        <div style="text-align:right;white-space:nowrap">${Math.abs(r.ov-r.nv)>0.004?`<div style="font-size:12px;color:var(--mute);text-decoration:line-through">${lei(r.ov)}</div><div style="font-weight:900;font-size:16px">${arrow(r.ov,r.nv)} ${lei(r.nv)}</div>`:`<div style="font-weight:700">${lei(r.nv)}</div><div style="font-size:11px;color:var(--mute)">витрина без изм.</div>`}</div>
+      </div>`).join("")}</div>`:emptyState("tag","Нет изменений", PF.mine&&total?"В вашем магазине изменённых товаров в наличии нет. Снимите фильтр, чтобы увидеть все.":"За выбранный период цены не менялись")}`;
+  v.querySelectorAll("#pDays button").forEach(b=>b.onclick=()=>{ PF.days=+b.dataset.d; renderPrices(); });
+  const pm=$("#pMine"); if (pm) pm.onchange=e=>{ PF.mine=e.target.checked; renderPrices(); };
+  v.querySelectorAll(".pchk").forEach(c=>c.onchange=e=>{ const code=e.target.closest(".cnt").dataset.code; if (e.target.checked) PF.off.delete(code); else PF.off.add(code); renderPrices(); });
+  v.querySelectorAll(".pname-link").forEach(n=>n.onclick=()=>{ const it=byCode.get(n.closest(".cnt").dataset.code); if (it) showProduct(it); });
+  $("#pAll").onclick=()=>{ if (sel.length===rows.length) rows.forEach(r=>PF.off.add(r.code)); else rows.forEach(r=>PF.off.delete(r.code)); renderPrices(); };
+  $("#pPrint").onclick=()=>printTags(sel.map(r=>{ const it=byCode.get(r.code)||{}; return {code:r.code, name:it.name||r.name, art:it.art||"", price:r.nv||r.ov, old:r.ov>r.nv?r.ov:0}; }));
+  markPricesSeen();
+}
+
+async function loadScript(src){ if (document.querySelector(`script[src="${src}"]`) && (src.includes("JsBarcode")?window.JsBarcode:true)) return; await new Promise(res=>{ const s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=res; document.head.appendChild(s); }); }
+async function printTags(list){
+  if (!list.length){ toast("Нечего печатать"); return; }
+  await loadScript("lib/JsBarcode.all.min.js");
+  const bar = code => {
+    const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");
+    const opts={width:1.5, height:32, fontSize:11, margin:0, textMargin:1, background:"#ffffff"};
+    try{ JsBarcode(svg, code, Object.assign({format: /^\d{13}$/.test(code)?"EAN13":"CODE128"}, opts)); }
+    catch(e){ try{ JsBarcode(svg, code, Object.assign({format:"CODE128"}, opts)); }catch(e2){ return ""; } }
+    return svg.outerHTML;
+  };
+  const date = new Date().toLocaleDateString("ru-RU");
+  const tags = list.map(t=>`<div class="t"><div class="b">ATEHNO</div><div class="n">${esc(t.name)}</div>
+      <div class="p">${t.old?`<s>${Math.round(t.old).toLocaleString("ru-RU")}</s>`:""}${Math.round(t.price).toLocaleString("ru-RU")} <small>лей</small></div>
+      <div class="c">${bar(t.code)}</div><div class="f"><span>${esc(t.art)}</span><span>${date}</span></div></div>`).join("");
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>Ценники ATEHNO</title><style>
+    @page{size:A4;margin:7mm} *{box-sizing:border-box} body{margin:0;font-family:Roboto,Arial,sans-serif;color:#111}
+    .g{display:grid;grid-template-columns:repeat(3,1fr);gap:0}
+    .t{height:41mm;border:0.3mm dashed #bbb;padding:2mm 2.5mm;display:flex;flex-direction:column;overflow:hidden;page-break-inside:avoid}
+    .b{font-weight:900;color:#BF0000;font-size:9pt;letter-spacing:.5px}
+    .n{font-size:8pt;line-height:1.2;height:3.6em;overflow:hidden;margin:0.5mm 0}
+    .p{font-size:20pt;font-weight:900;line-height:1;margin:0.5mm 0} .p small{font-size:10pt} .p s{font-size:10pt;color:#888;font-weight:400;margin-right:2mm}
+    .c{flex:1;display:flex;align-items:flex-end;justify-content:center} .c svg{max-width:100%;height:auto;max-height:12mm}
+    .f{display:flex;justify-content:space-between;font-size:6.5pt;color:#666}
+    </style></head><body><div class="g">${tags}</div></body></html>`;
+  if (window.AndroidBridge && AndroidBridge.printHtml){ AndroidBridge.printHtml(html); return; }
+  const w = window.open("", "_blank");
+  if (!w){ toast("Разрешите всплывающие окна для печати"); return; }
+  w.document.write(html); w.document.close();
+  setTimeout(()=>{ try{ w.focus(); w.print(); }catch(e){} }, 500);
+}
+
+/* ================= калькулятор кредита и рассрочки ================= */
+function creditCalc(p, sum, down, n){
+  const P = Math.max(0, sum-down), r = (+p.annual_rate||0)/1200;
+  const base = n>0 ? (r ? P*r/(1-Math.pow(1+r,-n)) : P/n) : 0;
+  const monthly = base + P*(+p.monthly_fee||0)/100;
+  const once = P*(+p.one_time_fee||0)/100;
+  const total = monthly*n + once + down;
+  return {P, monthly, once, total, over: total-sum};
+}
+function creditSheet(it){
+  const progs = (DB.cfg && DB.cfg.credit) || [];
+  if (!progs.length){ toast("Программы кредита не настроены (office\\credit.json)"); return; }
+  const sell = it.promo>0&&(!it.online||it.promo<it.online)?it.promo:it.online;
+  const st = {pi:0, sum:Math.round(it.vitr || sell*settings.rate || 0), down:0, n:progs[0].months[0]};
+  const {sh} = sheet(`<h3>Кредит / рассрочка</h3><div style="font-size:13px;color:var(--mute);margin:-6px 0 12px">${esc(it.name)}</div><div id="crBody"></div>`);
+  const draw = ()=>{
+    const p = progs[st.pi]; if (!p.months.includes(st.n)) st.n = p.months[0];
+    const c = creditCalc(p, st.sum, st.down, st.n);
+    const minDown = Math.ceil(st.sum*(+p.down_payment_min||0)/100);
+    const warn = st.sum < (p.min_sum||0) ? `сумма меньше минимальной (${lei(p.min_sum)})` : (p.max_sum && st.sum > p.max_sum) ? `сумма больше максимальной (${lei(p.max_sum)})` : st.down < minDown ? `первый взнос не меньше ${lei(minDown)}` : "";
+    sh.querySelector("#crBody").innerHTML = `
+      <div class="seg" style="margin-bottom:12px">${progs.map((q,i)=>`<button data-pi="${i}" class="${i===st.pi?"on":""}">${esc(q.name)}</button>`).join("")}</div>
+      <div class="row"><div class="field grow"><label>Цена, лей</label><input class="inp" id="crSum" type="number" inputmode="numeric" value="${st.sum}"></div>
+        <div class="field grow"><label>Первый взнос, лей</label><input class="inp" id="crDown" type="number" inputmode="numeric" value="${st.down}"></div></div>
+      <div class="field"><label>Срок, месяцев</label><div class="seg">${p.months.map(m=>`<button data-n="${m}" class="${m===st.n?"on":""}">${m}</button>`).join("")}</div></div>
+      <div class="card" style="background:var(--red-s);box-shadow:none;margin:0">
+        <div style="font-size:12px;color:var(--mute)">Ежемесячный платёж</div>
+        <div style="font-size:34px;font-weight:900;color:var(--red);line-height:1.1">${lei(c.monthly)}</div>
+        <div style="font-size:13px;color:var(--ink2);margin-top:6px">× ${st.n} мес${st.down?` · взнос ${lei(st.down)}`:""}${c.once?` · разовая комиссия ${lei(c.once)}`:""}</div>
+        <div style="font-size:13px;margin-top:4px">Итого: <b>${lei(c.total)}</b> · переплата <b>${c.over>0.5?lei(c.over):"0 лей"}</b></div>
+        ${warn?`<div style="color:var(--am);font-size:12px;margin-top:6px">⚠ ${warn}</div>`:""}
+        ${p.note?`<div style="color:var(--mute);font-size:12px;margin-top:6px">${esc(p.note)}</div>`:""}
+      </div>
+      <p style="font-size:11px;color:var(--mute);margin:10px 0 0">Расчёт предварительный. Точные условия — в договоре банка/кредитной компании.</p>`;
+    sh.querySelectorAll("[data-pi]").forEach(b=>b.onclick=()=>{ st.pi=+b.dataset.pi; draw(); });
+    sh.querySelectorAll("[data-n]").forEach(b=>b.onclick=()=>{ st.n=+b.dataset.n; draw(); });
+    const on = (id,k)=>{ const e=sh.querySelector(id); e.oninput=()=>{ st[k]=Math.max(0, num(e.value)); clearTimeout(e._t); e._t=setTimeout(()=>{ const pos=e.selectionStart; draw(); const n2=sh.querySelector(id); n2.focus(); try{ n2.setSelectionRange(pos,pos); }catch(x){} }, 350); }; };
+    on("#crSum","sum"); on("#crDown","down");
+  };
+  draw();
+}
+
+/* ================= отправка ревизии администратору ================= */
+async function sendRevision(R){
+  const inbox = DB.cfg && DB.cfg.inbox;
+  if (!inbox || !inbox.token){ toast("Отправка отчётов ещё не настроена — сообщите администратору"); return false; }
+  const data = {v:1, store:R.store, scope:REV.scope, group:REV.group||"", started:REV.started, finished:new Date().toISOString(),
+    by:{id:ME.id, name:ME.name, phone:ME.phone},
+    rows:R.rows.map(r=>[r.it.code, r.exp, r.fact]), unknown:R.unknown,
+    sum:{ok:R.ok.length, short:R.shortage.length, surp:R.surplus.length, pairs:R.pairs.length, unk:R.unknown.length}};
+  const gz = await new Response(new Blob([JSON.stringify(data)]).stream().pipeThrough(new CompressionStream("gzip"))).arrayBuffer();
+  const b = b64u.enc(gz);
+  const scopeTxt = REV.scope==="all"?"весь магазин":REV.scope==="group"?"группа "+REV.group:"выборочно";
+  const body = `**Ревизия · ${R.store}** · ${scopeTxt}\nСотрудник: ${ME.name}, ${ME.phone}\nПроверено: ${R.rows.length} · сходится ${R.ok.length} · недостача ${R.shortage.length} · излишек ${R.surplus.length} · пересорт ${R.pairs.length} · нет в базе ${R.unknown.length}\n\n<!--atehno:${b}-->`;
+  if (body.length > 65000){ toast("Отчёт слишком большой для отправки — скачайте Excel и перешлите вручную"); return false; }
+  const title = `Ревизия · ${R.store} · ${ME.name} · ${new Date().toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}`;
+  try{
+    const r = await fetch(`https://api.github.com/repos/${inbox.repo}/issues`, {method:"POST",
+      headers:{"Authorization":"Bearer "+inbox.token, "Accept":"application/vnd.github+json", "Content-Type":"application/json"},
+      body: JSON.stringify({title, body})});
+    if (!r.ok) throw new Error("сервер ответил "+r.status);
+    REV.sent = new Date().toISOString(); saveRev();
+    toast("✓ Отчёт отправлен администратору"); feedback(true);
+    return true;
+  }catch(e){ toast("Не удалось отправить: "+(/fetch/i.test(e.message)?"нет интернета":e.message)); return false; }
+}
+
+
+/* ================= вкладки ================= */
+document.querySelectorAll(".tabbar button[data-tab]").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+function showTab(t, silent){
+  tab=t;
+  document.querySelectorAll(".tabbar button[data-tab]").forEach(b=>b.classList.toggle("on", b.dataset.tab===t));
+  const view = t==="recent"?"find":t;
+  ["find","rev","base","prices"].forEach(x=>$("#v-"+x).classList.toggle("hidden", x!==view));
+  $("#searchWrap").classList.toggle("hidden", t==="base"||t==="prices");
+  if (t==="recent") renderRecent();
+  else if (t==="prices") renderPrices();
+  else if (t==="find" && !silent){ renderFind(); }
+  else if (t==="rev") renderRev();
+  else if (t==="base") renderBase();
+  const el=$("#v-"+view); el.classList.remove("view"); void el.offsetWidth; el.classList.add("view");
+}
+
+/* ================= выбор магазина ================= */
+function sheet(html){
+  const bg=document.createElement("div"); bg.className="sheet-bg";
+  const sh=document.createElement("div"); sh.className="sheet"; sh.innerHTML=`<div class="grab"></div>`+html;
+  const close=()=>{ bg.remove(); sh.remove(); };
+  bg.onclick=close; document.body.append(bg, sh); return {sh, close};
+}
+$("#storeChip").onclick=()=>{
+  const opts = hasStores()?ACTIVE:["Всего"];
+  const {sh,close}=sheet(`<h3>Мой магазин</h3><p style="color:var(--mute);font-size:13px;margin:-6px 0 12px">Остаток вашего магазина выделяется и проверяется первым</p>${opts.map(s=>`<button class="opt ${s===settings.store?"on":""}" data-s="${s}">${ic("pin")}${s}</button>`).join("")}`);
+  sh.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{ settings.store=b.dataset.s; saveSettings(); $("#storeName").textContent=settings.store; close(); if (current&&tab==="find"){ showProduct(current); } else showTab(tab); });
+};
+
+/* ================= обратная связь ================= */
+let AC;
+function feedback(ok){
+  if (!settings.beep) return;
+  try{ navigator.vibrate && navigator.vibrate(ok?50:[90,60,90]); }catch(e){}
+  try{
+    AC = AC || new (window.AudioContext||window.webkitAudioContext)();
+    const o=AC.createOscillator(), g=AC.createGain();
+    o.type="square"; o.frequency.value=ok?1800:280; g.gain.setValueAtTime(.05,AC.currentTime); g.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+(ok?.12:.3));
+    o.connect(g); g.connect(AC.destination); o.start(); o.stop(AC.currentTime+(ok?.12:.3));
+  }catch(e){}
+}
+
+/* ================= сканер ================= */
+const Scanner = {
+  stream:null, timer:null, det:null, zx:null, onCode:null, last:"", lastT:0, cont:false, torchOn:false,
+  async start(onCode, cont, title){
+    this.onCode=onCode; this.cont=cont;
+    $("#scTitle").textContent=title; $("#scLast").innerHTML=""; $("#scInput").value="";
+    $("#scanner").classList.add("on");
+    if (!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ $("#scHint").textContent="Камера недоступна. Откройте приложение по https или введите код вручную."; return; }
+    try{
+      this.stream=await navigator.mediaDevices.getUserMedia({audio:false, video:{facingMode:{ideal:"environment"}, width:{ideal:1920}, height:{ideal:1080}}});
+    }catch(e){ $("#scHint").textContent="Нет доступа к камере. Разрешите камеру в настройках браузера."; return; }
+    const v=$("#video"); v.srcObject=this.stream; await v.play().catch(()=>{});
+    try{ const tr=this.stream.getVideoTracks()[0]; const cap=tr.getCapabilities?tr.getCapabilities():{}; if (cap.focusMode&&cap.focusMode.includes("continuous")) tr.applyConstraints({advanced:[{focusMode:"continuous"}]}); $("#scTorch").classList.toggle("hidden", !cap.torch); }catch(e){}
+    $("#scHint").textContent = cont ? "Сканируйте товары подряд — каждый скан +1 шт" : "Наведите на штрихкод ценника или товара";
+    if (!this.det && "BarcodeDetector" in window){
+      try{ const fm=await BarcodeDetector.getSupportedFormats(); const want=fm.filter(f=>["ean_13","ean_8","code_128","code_39","upc_a","upc_e","itf","codabar","code_93","qr_code"].includes(f)); if (want.length) this.det=new BarcodeDetector({formats:want}); }catch(e){}
+    }
+    if (this.det) this.loopNative(); else await this.loopZxing();
+  },
+  hit(code){
+    const now=Date.now();
+    if (code===this.last && now-this.lastT<(this.cont?1600:2500)) return;
+    this.last=code; this.lastT=now;
+    const f=$("#frame"); f.classList.remove("hit"); void f.offsetWidth; f.classList.add("hit");
+    if (!this.cont) this.stop();
+    this.onCode(code);
+  },
+  loopNative(){
+    const v=$("#video");
+    const tick=async()=>{ if (!this.stream) return; try{ const r=await this.det.detect(v); if (r&&r.length) this.hit(r[0].rawValue); }catch(e){} this.timer=setTimeout(tick,100); };
+    tick();
+  },
+  async loopZxing(){
+    if (!window.ZXing) await new Promise(res=>{ const s=document.createElement("script"); s.src="lib/zxing.min.js"; s.onload=res; s.onerror=res; document.head.appendChild(s); });
+    if (!window.ZXing){ $("#scHint").textContent="Сканер не загрузился — введите код вручную"; return; }
+    if (!this.zx){
+      const hints=new Map(); hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.ITF,ZXing.BarcodeFormat.QR_CODE]);
+      this.zx=new ZXing.MultiFormatReader(); this.zx.setHints(hints);
+    }
+    const v=$("#video"), cv=document.createElement("canvas"), ctx=cv.getContext("2d",{willReadFrequently:true});
+    const tick=()=>{
+      if (!this.stream) return;
+      if (v.videoWidth){
+        // вырезаем центральную полосу — быстрее и точнее
+        const w=v.videoWidth, h=v.videoHeight, cw=Math.round(w*.85), ch=Math.round(h*.45);
+        const sc=Math.min(1, 1100/cw);
+        cv.width=Math.round(cw*sc); cv.height=Math.round(ch*sc);
+        ctx.drawImage(v,(w-cw)/2,(h-ch)/2*0.9,cw,ch,0,0,cv.width,cv.height);
+        try{ const r=this.zx.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(new ZXing.HTMLCanvasElementLuminanceSource(cv)))); if (r) this.hit(r.getText()); }catch(e){}
+        try{ this.zx.reset(); }catch(e){}
+      }
+      this.timer=setTimeout(tick,120);
+    };
+    tick();
+  },
+  async torch(){
+    const t=this.stream&&this.stream.getVideoTracks()[0]; if (!t) return;
+    this.torchOn=!this.torchOn;
+    try{ await t.applyConstraints({advanced:[{torch:this.torchOn}]}); $("#scTorch").classList.toggle("on",this.torchOn); }catch(e){ toast("Фонарик не поддерживается"); }
+  },
+  stop(){
+    clearTimeout(this.timer); this.timer=null;
+    if (this.stream){ this.stream.getTracks().forEach(t=>t.stop()); this.stream=null; }
+    this.torchOn=false; $("#scTorch").classList.remove("on");
+    $("#scanner").classList.remove("on");
+    if (tab==="rev") renderRev();
+  }
+};
+function openScanner(){
+  if (!DB.items.length){ toast(SYNC.state==="waiting"?"Базы ещё нет — ждём выгрузку из офиса":"База ещё загружается"); syncDB(true); return; }
+  if (REV && tab==="rev") Scanner.start(code=>revScan(code), true, `Ревизия · ${REV.store}`);
+  else Scanner.start(code=>{ $("#q").value=""; $("#qx").classList.add("hidden"); const it=lookup(code); if (it) showProduct(it,true); else { if (tab!=="find") showTab("find",true); renderFind(code,true); } }, false, "Сканирование");
+}
+$("#fab").onclick=openScanner;
+$("#scClose").onclick=()=>Scanner.stop();
+$("#scTorch").onclick=()=>Scanner.torch();
+const manual=()=>{ const v=$("#scInput").value.trim(); if (!v) return; $("#scInput").value=""; Scanner.last=""; Scanner.hit(v); };
+$("#scGo").onclick=manual;
+$("#scInput").addEventListener("keydown", e=>{ if (e.key==="Enter") manual(); });
+// аппаратный сканер (клавиатурный ввод + Enter) вне полей ввода
+let kb="", kbT=0;
+document.addEventListener("keydown", e=>{
+  if (e.target.tagName==="INPUT"||e.target.tagName==="SELECT") return;
+  const now=Date.now(); if (now-kbT>80) kb=""; kbT=now;
+  if (e.key==="Enter"&&kb.length>=6){ const c=kb; kb=""; if (REV&&tab==="rev") revScan(c); else { const it=lookup(c); if (it) showProduct(it,true); else renderFind(c,true); } }
+  else if (e.key.length===1) kb+=e.key;
+});
+
+/* ================= ревизия ================= */
+const saveRev=()=>S.set("rev",REV);
+const expected = it => REV ? (it.st[REV.store]||0) : 0;
+function revScope(){
+  if (REV.scope==="all") return DB.items.filter(it=>expected(it)>0);
+  if (REV.scope==="group") return DB.items.filter(it=>it.g===REV.group && expected(it)>0);
+  return [];
+}
+function revAdd(code, delta, set){
+  if (!REV) return;
+  const it=byCode.get(code), key=it?it.code:code, tgt=it?REV.counts:REV.unknown;
+  tgt[key]=Math.max(0, set!=null?set:(tgt[key]||0)+delta);
+  REV.order=[key,...REV.order.filter(c=>c!==key)];
+  saveRev(); updateBadge();
+  return {it, key, v:tgt[key]};
+}
+function revScan(code){
+  const it=lookup(code);
+  const r=revAdd(it?it.code:code, 1);
+  feedback(!!it);
+  const html = it ? `<div class="sc-last"><div class="n">${fq(r.v)}</div><div class="grow"><div class="t">${esc(it.name)}</div><div class="s">по базе ${fq(expected(it))} шт · ${r.v===expected(it)?"✓ сходится":r.v>expected(it)?"больше базы":"ещё "+fq(expected(it)-r.v)}</div></div></div>`
+                  : `<div class="sc-last"><div class="n" style="color:#b86e00">?</div><div class="grow"><div class="t">Нет в базе: ${esc(code)}</div><div class="s">записан как неизвестный · ${fq(r.v)} шт</div></div></div>`;
+  if ($("#scanner").classList.contains("on")) $("#scLast").innerHTML=html; else { toast(it?`+1 ${it.name.slice(0,36)} → ${r.v}`:`Нет в базе: ${code}`); renderRev(); }
+}
+function updateBadge(){ const n=REV?Object.keys(REV.counts).length+Object.keys(REV.unknown).length:0; const b=$("#revBadge"); b.textContent=n; b.classList.toggle("hidden",!REV); }
+function renderRev(){
+  const v=$("#v-rev");
+  if (!DB.items.length){ v.innerHTML=emptyState("db","Нет базы","Для ревизии нужна выгрузка остатков 1С",`<button class="btn" onclick="showTab('base')">Загрузить</button>`); return; }
+  if (!REV) return renderRevStart(v);
+  if (REV.report) return renderReport(v);
+  const scope=revScope(), nC=Object.keys(REV.counts).length, nU=Object.keys(REV.unknown).length, pcs=Object.values(REV.counts).reduce((a,b)=>a+b,0);
+  const done = scope.length ? scope.filter(it=>REV.counts[it.code]!=null).length : 0;
+  const scopeTxt = REV.scope==="all"?"Весь магазин":REV.scope==="group"?REV.group:"Выборочная проверка";
+  const rows = REV.order.slice(0,300).map(c=>{
+    const it=byCode.get(c), val=it?REV.counts[c]:REV.unknown[c]; if (val==null) return "";
+    const exp=it?expected(it):0, d=val-exp;
+    return `<div class="cnt" data-code="${esc(c)}"><div class="grow"><div style="font-weight:500;font-size:14px;line-height:1.3">${it?esc(it.name):"Неизвестный "+esc(c)}</div><div style="font-size:12px;color:var(--mute)">база ${fq(exp)} · <span class="diff ${d===0?"d0":d<0?"dm":"dp"}">${d===0?"сходится":d>0?"+"+fq(d):fq(d)}</span></div></div>
+      <div class="step"><button data-d="-1">−</button><input type="number" inputmode="numeric" value="${val}"><button data-d="1">+</button></div></div>`;
+  }).join("");
+  v.innerHTML=`<div class="rev-head"><div class="t">Ревизия · ${esc(REV.store)} · ${esc(scopeTxt)}</div><div class="n">${scope.length?`${done} из ${scope.length} позиций`:`${nC} позиций`}</div>
+      <div class="stats"><div><b>${fq(pcs)}</b><span>штук</span></div><div><b>${nC}</b><span>позиций</span></div><div><b>${nU}</b><span>нет в базе</span></div></div>
+      ${scope.length?`<div class="prog"><i style="width:${Math.round(done/scope.length*100)}%"></i></div>`:""}</div>
+    <div class="row" style="margin-bottom:12px"><button class="btn grow" onclick="openScanner()">${ic("scan")}Сканировать</button><button class="btn ghost" id="revRep">Отчёт</button></div>
+    <div id="revPick"></div>
+    ${rows?`<div class="card" style="padding:4px 16px">${rows}</div>`:emptyState("scan","Начните сканировать","Каждый скан прибавляет 1 шт. Количество можно поправить кнопками − и +. Найти товар без штрихкода — через поиск сверху.")}
+    <button class="btn line w" id="revCancel" style="margin-top:8px">Отменить ревизию</button>`;
+  v.querySelectorAll(".cnt").forEach(row=>{
+    const c=row.dataset.code;
+    row.querySelectorAll("button[data-d]").forEach(b=>b.onclick=()=>{ revAdd(c,+b.dataset.d); renderRev(); });
+    row.querySelector("input").onchange=e=>{ revAdd(c,0,num(e.target.value)); renderRev(); };
+  });
+  $("#revRep").onclick=()=>{ REV.report=true; saveRev(); renderRev(); };
+  $("#revCancel").onclick=()=>{ if (confirm("Отменить ревизию? Всё посчитанное будет удалено.")){ REV=null; saveRev(); updateBadge(); renderRev(); } };
+}
+function renderRevStart(v){
+  const opts=hasStores()?ACTIVE:["Всего"];
+  const gs={}; DB.items.forEach(it=>{ if (it.g && (it.st[myStore()]||0)>0) gs[it.g]=(gs[it.g]||0)+1; });
+  let scope="scanned";
+  v.innerHTML=`<div class="card"><h2 class="pname" style="margin-bottom:4px">Новая ревизия</h2><p style="color:var(--mute);font-size:13px;margin:0 0 16px">Отсканируйте всё, что есть на полке или складе. В конце будет отчёт: недостача, излишек и пересорт.</p>
+    <div class="field"><label>Магазин</label><div class="seg" id="sStore">${opts.map(s=>`<button data-v="${s}" class="${s===settings.store?"on":""}">${s}</button>`).join("")}</div></div>
+    <div class="field"><label>Что проверяем</label><div class="seg" id="sScope"><button data-v="scanned" class="on">Выборочно</button><button data-v="group">Группу</button><button data-v="all">Весь магазин</button></div></div>
+    <div class="field hidden" id="gWrap"><label>Группа товаров</label><select class="inp" id="sGroup">${Object.keys(gs).sort().map(g=>`<option value="${esc(g)}">${esc(g)} — ${gs[g]} поз.</option>`).join("")}</select></div>
+    <p id="scopeHint" style="font-size:13px;color:var(--mute);margin:0 0 14px">Сравниваются только отсканированные товары. Удобно для проверки одной витрины.</p>
+    <button class="btn w" id="go">${ic("scan")}Начать ревизию</button></div>`;
+  let store=settings.store && opts.includes(settings.store)?settings.store:opts[0];
+  v.querySelectorAll("#sStore button").forEach(b=>b.onclick=()=>{ store=b.dataset.v; v.querySelectorAll("#sStore button").forEach(x=>x.classList.toggle("on",x===b)); });
+  const hints={scanned:"Сравниваются только отсканированные товары. Удобно для проверки одной витрины.",group:"Всё, что числится в группе, но не отсканировано, попадёт в недостачу.",all:"Всё, что числится в магазине, но не отсканировано, попадёт в недостачу. Это полная инвентаризация."};
+  v.querySelectorAll("#sScope button").forEach(b=>b.onclick=()=>{ scope=b.dataset.v; v.querySelectorAll("#sScope button").forEach(x=>x.classList.toggle("on",x===b)); $("#gWrap").classList.toggle("hidden",scope!=="group"); $("#scopeHint").textContent=hints[scope]; });
+  $("#go").onclick=()=>{
+    REV={store, scope, group:$("#sGroup").value, started:new Date().toISOString(), counts:{}, unknown:{}, order:[]};
+    saveRev(); updateBadge(); renderRev(); openScanner();
+  };
+}
+function buildReport(){
+  const set=new Set(revScope().map(it=>it.code)); Object.keys(REV.counts).forEach(c=>set.add(c));
+  const rows=[...set].map(c=>byCode.get(c)).filter(Boolean).map(it=>{ const fact=REV.counts[it.code]||0, exp=expected(it); return {it,exp,fact,diff:fact-exp,cost:costUsd(it),short:Math.max(0,exp-fact),surp:Math.max(0,fact-exp),resort:0,pair:[]}; });
+  const byG={}; rows.forEach(r=>{ (byG[r.it.g||"—"]=byG[r.it.g||"—"]||[]).push(r); });
+  const pairs=[];
+  Object.entries(byG).forEach(([g,rs])=>{
+    const Sh=rs.filter(r=>r.short>0), P=rs.filter(r=>r.surp>0).sort((a,b)=>b.cost-a.cost);
+    for (const p of P){
+      let left=p.surp-p.resort;
+      for (const s of Sh.filter(s=>s.short-s.resort>0).sort((a,b)=>Math.abs(a.cost-p.cost)-Math.abs(b.cost-p.cost))){
+        if (left<=0) break;
+        const q=Math.min(left, s.short-s.resort); s.resort+=q; p.resort+=q; left-=q;
+        pairs.push({g, minus:s.it, plus:p.it, qty:q, dcost:(p.cost-s.cost)*q}); s.pair.push(p.it.code); p.pair.push(s.it.code);
+      }
+    }
+  });
+  const shortage=rows.filter(r=>r.short-r.resort>0), surplus=rows.filter(r=>r.surp-r.resort>0), ok=rows.filter(r=>r.diff===0);
+  const unknown=Object.entries(REV.unknown).filter(([,v])=>v>0);
+  return {store:REV.store, rows, shortage, surplus, ok, pairs, unknown,
+    sumShort:shortage.reduce((s,r)=>s+(r.short-r.resort)*r.cost,0), sumSurp:surplus.reduce((s,r)=>s+(r.surp-r.resort)*r.cost,0), sumRes:pairs.reduce((s,p)=>s+p.dcost,0)};
+}
+let repTab="pairs";
+function renderReport(v){
+  const R=buildReport(), sc=canSeeCost();
+  const tabs=[["pairs","Пересорт",R.pairs.length],["short","Недостача",R.shortage.length],["surp","Излишек",R.surplus.length],["ok","Сходится",R.ok.length],["unk","Нет в базе",R.unknown.length]];
+  if (!tabs.find(t=>t[0]===repTab&&t[2])) repTab=(tabs.find(t=>t[2])||tabs[0])[0];
+  const nm = it => `<div style="font-weight:500;font-size:14px;line-height:1.3">${esc(it.name)}</div><div style="font-size:12px;color:var(--mute)">${esc(it.code)}</div>`;
+  let body="";
+  if (repTab==="pairs") body=R.pairs.map(p=>`<div class="pair"><div class="m"><div>${nm(p.minus)}</div></div><div class="q">${fq(p.qty)} шт</div><div class="p"><div>${nm(p.plus)}${sc?`<div style="font-size:12px;color:var(--mute)">разница цены ${usd(p.dcost)}</div>`:""}</div></div></div>`).join("");
+  else if (repTab==="short") body=R.shortage.map(r=>`<div class="cnt"><div class="grow">${nm(r.it)}</div><div style="text-align:right"><span class="diff dm">−${fq(r.short-r.resort)}</span><div style="font-size:11px;color:var(--mute);margin-top:3px">база ${fq(r.exp)} · факт ${fq(r.fact)}${sc?` · ${usd((r.short-r.resort)*r.cost)}`:""}</div></div></div>`).join("");
+  else if (repTab==="surp") body=R.surplus.map(r=>`<div class="cnt"><div class="grow">${nm(r.it)}</div><div style="text-align:right"><span class="diff dp">+${fq(r.surp-r.resort)}</span><div style="font-size:11px;color:var(--mute);margin-top:3px">база ${fq(r.exp)} · факт ${fq(r.fact)}${sc?` · ${usd((r.surp-r.resort)*r.cost)}`:""}</div></div></div>`).join("");
+  else if (repTab==="ok") body=R.ok.map(r=>`<div class="cnt"><div class="grow">${nm(r.it)}</div><span class="diff d0">${fq(r.fact)} шт</span></div>`).join("");
+  else body=R.unknown.map(([c,q])=>`<div class="cnt"><div class="grow"><b>${esc(c)}</b><div style="font-size:12px;color:var(--mute)">штрихкода нет в выгрузке 1С</div></div><b>${fq(q)} шт</b></div>`).join("");
+  v.innerHTML=`<div class="card"><div style="font-size:13px;color:var(--mute)">Отчёт ревизии · ${new Date().toLocaleDateString("ru-RU")}</div><h2 class="pname">Магазин ${esc(R.store)}</h2>
+    <div class="kpi"><div style="background:var(--ok-s);color:var(--ok)"><b>${R.ok.length}</b><span>сходится</span></div>
+      <div style="background:var(--am-s);color:var(--am)"><b>${R.pairs.length}</b><span>пересорт${sc&&R.pairs.length?` · ${usd(R.sumRes)}`:""}</span></div>
+      <div style="background:var(--red-s);color:var(--red)"><b>${R.shortage.length}</b><span>недостача${sc&&R.shortage.length?` · ${usd(R.sumShort)}`:""}</span></div>
+      <div style="background:var(--tr-s);color:var(--tr)"><b>${R.surplus.length}</b><span>излишек${sc&&R.surplus.length?` · ${usd(R.sumSurp)}`:""}</span></div></div>
+    <button class="btn w" id="rsend" style="margin-bottom:8px">${ic("send")}${REV.sent?"Отправлено ✓ — отправить ещё раз":"Отправить отчёт администратору"}</button>
+    <div class="row"><button class="btn ghost grow" id="xls">${ic("down")}Скачать Excel</button><button class="btn ghost" id="back">Досчитать</button></div></div>
+    <div class="seg" style="margin-bottom:10px">${tabs.map(t=>`<button data-t="${t[0]}" class="${t[0]===repTab?"on":""}">${t[1]}<em>${t[2]}</em></button>`).join("")}</div>
+    ${repTab==="pairs"&&R.pairs.length?`<p style="font-size:12px;color:var(--mute);margin:0 4px 8px">Товара «−» не хватает, а товара «+» из той же группы столько же лишнего: скорее всего, продали или поставили на полку не тот.</p>`:""}
+    <div class="card" style="padding:4px 16px">${body||`<div class="empty">Нет позиций</div>`}</div>
+    <button class="btn line w" id="finish">Завершить ревизию</button>`;
+  v.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{ repTab=b.dataset.t; renderReport(v); });
+  $("#back").onclick=()=>{ REV.report=false; saveRev(); renderRev(); };
+  $("#xls").onclick=()=>exportXls(R);
+  $("#rsend").onclick=async e=>{ e.target.disabled=true; e.target.textContent="Отправляю…"; await sendRevision(R); renderReport(v); };
+  $("#finish").onclick=()=>{ if (confirm("Завершить ревизию? Сначала скачайте Excel — после завершения данные удалятся.")){ REV=null; saveRev(); updateBadge(); renderRev(); } };
+}
+function exportXls(R){
+  const wb=XLSX.utils.book_new(), sc=canSeeCost(), date=new Date().toLocaleString("ru-RU");
+  const st=r=> r.diff===0?"Сходится":(r.resort>0?"Пересорт"+((r.diff<0?r.short:r.surp)-r.resort>0?" + "+(r.diff<0?"недостача":"излишек"):""):(r.diff<0?"Недостача":"Излишек"));
+  const sum=[["Ревизия магазина",R.store],["Дата",date],["Проверено позиций",R.rows.length],["Сходится",R.ok.length],["Недостача, позиций",R.shortage.length],["Излишек, позиций",R.surplus.length],["Пересорт, пар",R.pairs.length],["Нет в базе",R.unknown.length]];
+  if (sc) sum.push(["Недостача, $",+R.sumShort.toFixed(2)],["Излишек, $",+R.sumSurp.toFixed(2)],["Пересорт: разница цены, $",+R.sumRes.toFixed(2)]);
+  sum.push([],["Пересорт: в одной группе одного товара не хватает, а другого столько же лишнего (пары подобраны по самой близкой цене)."]);
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sum), "Итог");
+  const pr=R.pairs.map(p=>{ const o={"Группа":p.g,"Не хватает: код":p.minus.code,"Не хватает: товар":p.minus.name,"Лишний: код":p.plus.code,"Лишний: товар":p.plus.name,"Кол-во":p.qty}; if (sc) o["Разница цены $"]=+p.dcost.toFixed(2); return o; });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(pr.length?pr:[{"Пересорт":"нет"}]), "Пересорт");
+  const all=R.rows.map(r=>{ const o={"Код":r.it.code,"Артикул":r.it.art,"Наименование":r.it.name,"Группа":r.it.g,"По базе":r.exp,"Факт":r.fact,"Разница":r.diff,"Статус":st(r),"Пересорт с кодами":r.pair.join(", ")}; if (sc){ o["Себест. $"]=+r.cost.toFixed(2); o["Сумма разницы $"]=+(r.diff*r.cost).toFixed(2); } return o; }).sort((a,b)=>a["Статус"].localeCompare(b["Статус"]));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(all.length?all:[{"Нет данных":""}]), "Все позиции");
+  if (R.unknown.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(R.unknown.map(([c,v])=>({"Штрихкод":c,"Кол-во":v}))), "Нет в базе");
+  const fn=`Ревизия_${R.store}_${new Date().toISOString().slice(0,10)}.xlsx`;
+  saveFile(fn, XLSX.write(wb,{bookType:"xlsx",type:"array"}), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+}
+function saveFile(fn, arr, mime){
+  if (window.AndroidBridge){
+    const u8=new Uint8Array(arr); let s=""; for (let i=0;i<u8.length;i+=0x8000) s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));
+    AndroidBridge.saveFile(fn, btoa(s), mime); return;
+  }
+  const blob=new Blob([arr],{type:mime}), file=new File([blob],fn,{type:mime});
+  if (navigator.canShare && navigator.canShare({files:[file]})) navigator.share({files:[file], title:fn}).catch(e=>{ if (e.name!=="AbortError") dl(blob,fn); });
+  else dl(blob,fn);
+}
+function dl(blob,fn){ const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=fn; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},1500); toast("Файл сохранён: "+fn); }
+
+/* ================= база и настройки ================= */
+function renderBase(logText){
+  const v=$("#v-base");
+  const when = DB.loaded ? new Date(DB.loaded).toLocaleString("ru-RU",{day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"}) : "";
+  const waiting = SYNC.state==="waiting" && !DB.items.length;
+  const conn = `<div class="conn ${SYNC.error?"bad":""}"><div class="big">${ic(SYNC.error?"no":waiting?"clock":"ok")}</div><div class="grow"><b>${SYNC.busy?"Обновляю…":SYNC.error?"Ошибка обновления":"База подключена"}</b><span>${SYNC.error?esc(SYNC.error):waiting?"ждём первую выгрузку 1С из офиса — загрузится сама":`проверено ${SYNC.checked?ago(new Date(SYNC.checked).toISOString()):"—"} · обновляется само`}</span></div></div>
+      ${DB.items.length?`<div class="row" style="margin:4px 2px 14px"><div class="grow"><div style="font-size:28px;font-weight:900;color:var(--red)">${DB.items.length.toLocaleString("ru-RU")}</div><div style="font-size:12px;color:var(--mute)">товаров · база от ${when}</div></div></div>`:""}
+      <button class="btn w" id="cSync" ${SYNC.busy?"disabled":""}>Обновить сейчас</button>`;
+  const me = ME ? `<div class="set"><div class="grow"><b>${esc(ME.name)}</b><span>${esc(ME.phone)} · ${isAdmin()?"администратор":"продавец"} · код ${esc(ME.id)}</span></div></div>` : "";
+  v.innerHTML=`<div class="card">${conn}</div>
+    <div class="h2">Сотрудник</div>
+    <div class="card" style="padding:2px 16px">${me}</div>
+    <div class="h2">Настройки</div>
+    <div class="card" style="padding:2px 16px">
+      <div class="set"><div class="grow"><b>Мой магазин</b><span>выделяется в карточке и в ревизии</span></div><button class="btn ghost" id="setStore" style="padding:10px 14px">${esc(myStore())}</button></div>
+      <div class="set"><div class="grow"><b>Курс USD → MDL</b><span>для пересчёта цен</span></div><input class="inp" id="rate" type="number" step="0.01" style="width:100px;text-align:center" value="${settings.rate}"></div>
+      ${isAdmin()?`<div class="set"><div class="grow"><b>Закупка и наценка</b><span>показывать в карточке (по нажатию) — только у администратора</span></div><label class="sw"><input type="checkbox" id="showCost" ${settings.showCost?"checked":""}><i></i></label></div>`:""}
+      <div class="set"><div class="grow"><b>Звук и вибрация</b><span>при сканировании</span></div><label class="sw"><input type="checkbox" id="beep" ${settings.beep?"checked":""}><i></i></label></div>
+    </div>
+    ${isAdmin()?`<details class="adm" ${logText?"open":""}><summary>▸ Для администратора</summary>
+    <div class="card">
+      <div class="drop"><div class="ico">${ic("up")}</div><b style="display:block;margin-bottom:4px">Загрузить файлы 1С вручную</b><div style="font-size:13px;color:var(--mute);margin-bottom:14px">Только на этом телефоне. При следующем обновлении с сервера база заменится.</div><button class="btn" id="pick">Выбрать файлы</button></div>
+      <div class="log" id="loadLog">${esc(logText||"")}</div></div>
+    <div class="card" style="padding:2px 16px">
+      <div class="set"><div class="grow"><b>Сотрудники и доступ</b><span>заявки одобряются и удаляются в программе «Сотрудники» на офисном ПК (office\\EMPLOYEES.bat)</span></div></div>
+      <div class="set"><div class="grow"><b>Демо-данные</b><span>попробовать без выгрузки 1С</span></div><button class="btn ghost" id="demo" style="padding:10px 14px">Загрузить</button></div>
+    </div></details>`:""}
+    <p style="text-align:center;color:var(--mute);font-size:12px">ATEHNO Сканер · v2.4${location.host==="appassets.androidplatform.net"?" · офлайн-копия":""}</p>`;
+  const on=(id,f)=>{ const e=$(id); if (e) e.onclick=f; };
+  on("#cSync", ()=>syncDB(true));
+  on("#pick", ()=>$("#files").click());
+  on("#demo", loadDemo);
+  $("#setStore").onclick=()=>$("#storeChip").click();
+  $("#rate").onchange=e=>{ settings.rate=num(e.target.value)||18.4; saveSettings(); toast("Курс: "+settings.rate); };
+  const sc=$("#showCost"); if (sc) sc.onchange=e=>{ settings.showCost=e.target.checked; saveSettings(); };
+  $("#beep").onchange=e=>{ settings.beep=e.target.checked; saveSettings(); if (settings.beep) feedback(true); };
+}
+$("#files").onchange=e=>{ if (e.target.files.length) loadFiles([...e.target.files]); e.target.value=""; };
+async function loadDemo(){
+  const mk=(code,art,name,g,b,k,a,tr,cost,onl,promo,vit)=>({code,art,bar:"",name,g1:"Техника",g,st:{"Бельцы":b,"Кишинёв":k,"ASEM":a},tr,cost,costMdl:cost*18.4,online:onl,promo,vitr:vit,status:""});
+  DB={loaded:new Date().toISOString(), files:["демо"], items:[
+    mk("9857902659307","APC1","Fan Controller Aigo APC1","Вентиляторы",4,2,0,0,6.5,12,0,229),
+    mk("4710886000017","KF432C16BB/8","RAM DDR4 8GB 3200MHz Kingston Fury Beast","Память DDR4",6,3,1,0,17,24.9,22.9,469),
+    mk("4710886000024","KF432C16BB/16","RAM DDR4 16GB 3200MHz Kingston Fury Beast","Память DDR4",2,0,0,10,31,44.9,0,849),
+    mk("4710886000031","KF436C18BBA/16","RAM DDR4 16GB 3600MHz Kingston Fury Beast RGB","Память DDR4",0,1,0,0,33,47.9,0,899),
+    mk("9857902887328","CHUWI-CBX","Laptop Chuwi CoreBook X 14\" i5-1235U 16/512GB","Ноутбуки",0,0,0,40,390,549,0,10499),
+    mk("6934177700001","RN13-8-256","Smartphone Xiaomi Redmi Note 13 8/256GB Midnight Black","Смартфоны",3,5,2,0,165,219,199,4199),
+    mk("8806095000002","LS24C330","Monitor Samsung 24\" LS24C330 IPS 100Hz","Мониторы",0,0,0,0,82,109,0,2099),
+  ]};
+  await IDB.set("db",DB); indexDB(); renderBase("Демо-данные загружены: 7 товаров. Попробуйте поиск «fury» или код 4710886000017.");
+  toast("Демо загружено");
+}
+
+/* ================= старт ================= */
+(async function(){
+  const saved=await IDB.get("db"); if (saved&&saved.items) DB=saved;
+  indexDB(); updateBadge();
+  renderGate(); priceBadge();
+  if (location.hash==="#changes" && DB.items.length) showTab("prices"); else if (REV) showTab("rev"); else showTab("find");
+  syncUI(); syncDB();
+  setInterval(()=>syncDB(), 15*60*1000);
+  document.addEventListener("visibilitychange", ()=>{ if (!document.hidden && Date.now()-SYNC.checked>5*60*1000) syncDB(); });
+  window.addEventListener("online", ()=>syncDB());
+  setInterval(syncUI, 60*1000);
+  if ("serviceWorker" in navigator && location.protocol==="https:" && location.host!=="appassets.androidplatform.net") navigator.serviceWorker.register("sw.js").catch(()=>{});
+})();
+</script>
+</body>
+</html>
